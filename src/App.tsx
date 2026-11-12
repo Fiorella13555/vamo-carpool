@@ -21,6 +21,7 @@ import { AdminAlertsPage } from "./features/admin/AdminAlertsPage";
 import { DesignSystemPage } from "./features/design-system/DesignSystemPage";
 import { ToastProvider } from "./components/ui";
 import "./App.css";
+import { BackNavigation } from "./components/BackNavigation";
 import { ResumeJourney } from "./features/journey/ResumeJourney";
 import { ForecastPage } from "./features/forecast/ForecastPage";
 import { LiveLocationProvider } from "./features/location/LiveLocationProvider";
@@ -43,6 +44,7 @@ function App() {
       <AuthProvider>
         <LiveLocationProvider>
         <BrowserRouter>
+          <BackNavigation/>
           <Routes>
             <Route path="/conductores/ranking" element={<ProtectedRoute><DriverLeaderboard/></ProtectedRoute>}/>
             <Route path="/viaje/:tripId" element={<ProtectedRoute><JourneyRoomPage /></ProtectedRoute>} />

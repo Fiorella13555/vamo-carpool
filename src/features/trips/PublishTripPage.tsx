@@ -161,7 +161,7 @@ function PublishTripForm() {
   }
 
   return (
-    <div className="relative h-dvh overflow-hidden bg-bg-page">
+    <div className="relative h-[calc(100dvh-60px)] overflow-hidden bg-bg-page">
       <Map
         mapId={import.meta.env.VITE_GOOGLE_MAPS_MAP_ID || "DEMO_MAP_ID"}
         defaultCenter={LIMA_CENTER}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useMapsLibrary, useMap } from "@vis.gl/react-google-maps";
 import { isInLima } from "../lib/geo";
 import type { LatLng } from "../lib/geo";
@@ -8,50 +8,88 @@ export function LocationSearch({ label, point, onSelect, onClear, onMap }: {
   onSelect: (point: LatLng) => void; onClear: () => void; onMap: () => void;
 }) {
   const library = useMapsLibrary("places");
-  const host = useRef<HTMLDivElement>(null);
-  const widgetRef = useRef<google.maps.places.PlaceAutocompleteElement | null>(null);
-  const callbacks = useRef({onSelect, onClear});
-  callbacks.current = {onSelect, onClear};
+  const id = useId();
+  const [query, setQuery] = useState("");
+  const [suggestions, setSuggestions] = useState<google.maps.places.PlacePrediction[]>([]);
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(-1);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const version = useRef(0);
+  const session = useRef<google.maps.places.AutocompleteSessionToken | null>(null);
   useEffect(() => {
-    if (!library || !host.current) return;
-    const widget = new library.PlaceAutocompleteElement({
-      includedRegionCodes: ["pe"],
-      locationRestriction: { south:-12.4, north:-11.65, west:-77.2, east:-76.7 },
-    });
-    widgetRef.current = widget;
-    widget.setAttribute("placeholder", label);
-    widget.setAttribute("aria-label", label);
-    widget.style.width = "100%";
-    let version = 0;
-    const clear = () => { version++; callbacks.current.onClear(); setError(null); };
-    const select = async (event: Event) => {
-      const token = ++version;
-      callbacks.current.onClear();
+    if (!library || !open || query.trim().length < 3) return;
+    const token = version.current;
+    const timer = setTimeout(async () => {
+      setLoading(true);
       try {
-        const prediction = (event as Event & {placePrediction: google.maps.places.PlacePrediction}).placePrediction;
-        const place = prediction.toPlace();
-        await place.fetchFields({ fields:["location"] });
-        if (token !== version) return;
-        const location = place.location?.toJSON();
-        if (!location || !isInLima(location)) throw new Error("Selecciona un lugar dentro de Lima Metropolitana.");
-        callbacks.current.onSelect(location); setError(null);
-      } catch { if (token === version) setError("No pudimos seleccionar ese lugar. Prueba otro resultado o elige en el mapa."); }
-    };
-    const failure = () => setError("La búsqueda de direcciones no está disponible. Puedes elegir en el mapa.");
-    widget.addEventListener("input", clear);
-    widget.addEventListener("gmp-select", select);
-    widget.addEventListener("gmp-error", failure);
-    host.current.append(widget);
-    return () => { version++; widget.removeEventListener("input",clear); widget.removeEventListener("gmp-select",select); widget.removeEventListener("gmp-error",failure); widget.remove(); widgetRef.current = null; };
-  }, [library, label]);
-  return <section className="flex flex-col gap-1.5">
-    <p className="text-sm font-bold text-text-primary">{label}</p>
-    <div ref={host}/>
-    {!library && <p className="text-xs text-text-secondary">Cargando búsqueda de direcciones…</p>}
-    {point && <p className="text-xs text-text-secondary">Punto seleccionado: {point.lat.toFixed(5)}, {point.lng.toFixed(5)}</p>}
+        session.current ??= new library.AutocompleteSessionToken();
+        const result = await library.AutocompleteSuggestion.fetchAutocompleteSuggestions({
+          input: query.trim(), sessionToken: session.current,
+          includedRegionCodes: ["pe"], language: "es", region: "pe",
+          locationRestriction: { south: -12.4, north: -11.65, west: -77.2, east: -76.7 },
+        });
+        if (token !== version.current) return;
+        setSuggestions(result.suggestions.flatMap(s => s.placePrediction ? [s.placePrediction] : []));
+        setActive(-1);
+      } catch {
+        if (token === version.current) setError("No pudimos buscar direcciones. Intenta nuevamente o elige en el mapa.");
+      } finally { if (token === version.current) setLoading(false); }
+    }, 300);
+    return () => { clearTimeout(timer); };
+  }, [library, query, open]);
+  useEffect(() => () => { version.current++; }, []);
+  async function select(prediction: google.maps.places.PlacePrediction) {
+    const token = ++version.current;
+    setQuery(prediction.text.toString()); setOpen(false); setSuggestions([]); setError(null); setLoading(true);
+    try {
+      const place = prediction.toPlace();
+      await place.fetchFields({ fields: ["location"] });
+      if (token !== version.current) return;
+      const location = place.location?.toJSON();
+      if (!location || !isInLima(location)) throw new Error();
+      onSelect(location);
+    } catch {
+      if (token === version.current) setError("No pudimos seleccionar ese lugar. Elige otra opción o usa el mapa.");
+    } finally {
+      session.current = null;
+      if (token === version.current) setLoading(false);
+    }
+  }
+  const visible = open && suggestions.length > 0;
+  return <section className="flex flex-col gap-1.5" onBlur={e => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node | null)) { version.current++; setOpen(false); setLoading(false); }
+  }}>
+    <label htmlFor={id} className="text-sm font-bold text-text-primary">{label}</label>
+    <input id={id} role="combobox" autoComplete="off" aria-autocomplete="list" aria-expanded={visible}
+      aria-controls={`${id}-options`} aria-activedescendant={visible && active >= 0 ? `${id}-${active}` : undefined}
+      placeholder="Escribe una dirección o un lugar" value={query}
+      className="min-h-12 w-full rounded-lg border border-border-default bg-bg-surface px-3 text-base text-text-primary focus:outline-2 focus:outline-accent-700"
+      onFocus={() => setOpen(true)} onChange={e => {
+        version.current++; setQuery(e.target.value); setSuggestions([]); setActive(-1); setOpen(true); setLoading(false); setError(null); onClear();
+      }} onKeyDown={e => {
+        if (e.key === "Escape") { version.current++; setOpen(false); setLoading(false); }
+        if (visible && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
+          e.preventDefault(); setActive(previous => (previous + (e.key === "ArrowDown" ? 1 : suggestions.length - 1) + suggestions.length) % suggestions.length);
+        }
+        if (visible && e.key === "Enter") { e.preventDefault(); if (active >= 0) void select(suggestions[active]); }
+      }}/>
+    {visible && <div className="rounded-lg border border-border-default bg-bg-surface shadow-md">
+      <ul id={`${id}-options`} role="listbox" aria-label={`Sugerencias de ${label.toLowerCase()}`}>
+        {suggestions.map((prediction, index) => <li key={prediction.placeId} role="option" id={`${id}-${index}`} aria-selected={active === index}>
+          <button type="button" tabIndex={-1} className={`min-h-12 w-full border-b border-border-subtle px-3 py-3 text-left text-sm hover:bg-bg-sunken ${active === index ? 'bg-bg-sunken' : ''}`}
+            onMouseDown={e => e.preventDefault()} onClick={() => void select(prediction)}>{prediction.text.toString()}</button>
+        </li>)}
+      </ul><p className="px-3 py-2 text-right text-xs text-text-secondary">Google Maps</p>
+    </div>}
+    {loading && <p role="status" className="text-xs text-text-secondary">Buscando dirección…</p>}
+    {!library && <p role="status" className="text-xs text-text-secondary">Cargando búsqueda de direcciones…</p>}
+    {library && open && query.trim().length >= 3 && !loading && !error && !suggestions.length && <p className="text-xs text-text-secondary">Prueba con la calle, el distrito o un lugar conocido.</p>}
+    {point && <p className="text-xs text-text-secondary">Ubicación seleccionada ✓</p>}
     {error && <p role="alert" className="text-xs text-error">{error}</p>}
-    <button type="button" className="min-h-11 text-left text-sm font-semibold text-accent-700" onClick={()=>{if(widgetRef.current) widgetRef.current.value=""; onMap();}}>Elegir {label.toLowerCase()} en el mapa ↗</button>
+    <button type="button" className="min-h-11 text-left text-sm font-semibold text-accent-700" onClick={() => {
+      version.current++; setOpen(false); setLoading(false); session.current = null; onMap();
+    }}>Elegir {label.toLowerCase()} en el mapa ↗</button>
   </section>;
 }
 
