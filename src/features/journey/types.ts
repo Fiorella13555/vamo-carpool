@@ -10,6 +10,7 @@ export interface JourneyOption {
  driver_progress:number|null;
 }
 export interface JourneyRequest {
+ closure_reason?:'departed'|null;
  id:string; passenger_id:string; name:string; status:'pending'|'accepted'|'rejected'|'cancelled';
  stage:'waiting'|'onboard'|'completed'; price:number|null; pickup_fraction:number|null; dropoff_fraction:number|null;
  pickup:LatLng|null; dropoff:LatLng|null; origin:LatLng|null; destination:LatLng|null;

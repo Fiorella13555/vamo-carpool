@@ -60,3 +60,8 @@ it('cerrar la confirmación no cancela el viaje',async()=>{
 it('no ofrece aceptar ni cancelar al conductor en un viaje cancelado',async()=>{
  const data=structuredClone(snapshot);data.is_driver=true;data.status='cancelled';mocks.room.mockResolvedValue(data);show();await settle();expect(screen.queryByRole('button',{name:'Cancelar viaje'})).toBeNull();expect(screen.queryByRole('button',{name:'Aceptar'})).toBeNull();
 });
+
+it('avisa al pasajero pendiente que el viaje ya salió',async()=>{
+ const data=structuredClone(snapshot);data.status='ongoing';data.requests[0].status='rejected';data.requests[0].closure_reason='departed';mocks.room.mockResolvedValue(data);
+ show();await settle();expect(screen.getByRole('status').textContent).toContain('El viaje ya salió');expect(screen.getByRole('link',{name:'Buscar otro viaje'})).toBeTruthy();
+});
