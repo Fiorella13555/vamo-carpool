@@ -13,8 +13,15 @@ it('mantiene todos los horarios futuros aunque estén lejos de la preferencia',(
  const result=scheduledOptions(rows,now+15*60000,now);
  expect(result).toHaveLength(20);expect(result[0].trip_id).toBe('14');
 });
-it('excluye viajes iniciados, vencidos, finalizados y cancelados',()=>{
- expect(scheduledOptions([trip('ongoing',10,0,'ongoing'),trip('past',-1),trip('now',0),trip('finished',10,0,'finished'),trip('cancelled',10,0,'cancelled'),trip('future',10)],now+15*60000,now).map(t=>t.trip_id)).toEqual(['future']);
+it('admite viajes programados con hora pasada, pero excluye viajes terminados',()=>{
+ expect(scheduledOptions([trip('past',-1),trip('finished',10,0,'finished'),trip('cancelled',10,0,'cancelled')],now+15*60000,now).map(t=>t.trip_id)).toEqual(['past']);
+});
+it('solo muestra viajes en curso cuyo conductor aún no pasó el recojo',()=>{
+ const waiting={...trip('waiting',-30,.7,'ongoing'),driver_progress:.4};
+ const passed={...trip('passed',-30,.3,'ongoing'),driver_progress:.5};
+ const stale={...waiting,trip_id:'stale',driver_progress:null};
+ expect(scheduledOptions([passed,stale,waiting],now+15*60000,now).map(t=>t.trip_id)).toEqual(['waiting']);
+ expect(pickupTime(waiting,now)).toBeCloseTo(now+18*60000);
 });
 it('la afinidad no adelanta una opción más alejada del horario',()=>{
  const positions=new Map([['far',{position:1}],['near',{position:2}]]);

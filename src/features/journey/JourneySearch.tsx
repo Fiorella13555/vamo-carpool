@@ -32,7 +32,7 @@ function Option({option,origin,destination,onSelect,busy,onMetrics,error}:{optio
  {!eta&&<p className="text-xs text-warning">Esperando ubicación reciente del conductor para estimar los tiempos.</p>}
  {eta?.canReachPickup===false&&<p className="text-xs text-error">No alcanzarías el punto caminando antes del recojo estimado.</p>}
  <Button disabled={busy} onClick={()=>setPreview(true)}>Visualizar viaje</Button>
- {preview&&<JourneyPreview route={option.route} origin={origin} destination={destination} pickup={option.pickup} dropoff={option.dropoff} price={option.price} busy={busy} error={error} notice={eta?.canReachPickup===false?'No alcanzarías el recojo caminando antes de la hora estimada.':undefined} disabled={eta===null||eta.canReachPickup===false||option.status!=='scheduled'||new Date(option.departure_time).getTime()<=now} onClose={()=>setPreview(false)} onConfirm={onSelect}/>}
+ {preview&&<JourneyPreview route={option.route} origin={origin} destination={destination} pickup={option.pickup} dropoff={option.dropoff} price={option.price} busy={busy} error={error} notice={eta?.canReachPickup===false?'No alcanzarías el recojo caminando antes de la hora estimada.':undefined} disabled={eta===null||eta.canReachPickup===false||!['scheduled','ongoing'].includes(option.status)} onClose={()=>setPreview(false)} onConfirm={onSelect}/>}
  </Card>;
 }
 function Search(){
@@ -69,7 +69,7 @@ function Search(){
   if(!Number.isFinite(new Date(desiredTime).getTime())||new Date(desiredTime).getTime()<Date.now()){setError('Elige una fecha y hora futura para el recojo.');return;}
   const token=++version.current;setBusy(true);setSearching(true);setResults(null);setMetrics({});setSelected(null);setError(null);
   try{const rows=await options(origin,destination,maxDistance);if(token===version.current)setResults(rows);}
-  catch{if(token===version.current)setError('No pudimos consultar los viajes. Intenta comparar nuevamente.');}
+  catch(e){if(token===version.current)setError(e instanceof Error?`No pudimos consultar los viajes. ${e.message}`:'No pudimos consultar los viajes. Intenta comparar nuevamente.');}
   finally{if(token===version.current){setBusy(false);setSearching(false);setCompletedSearch(value=>value+1);}}
  }
  async function select(option:JourneyOption){if(!origin||!destination)return;setBusy(true);setError(null);try{await request(option,origin,destination,maxDistance);navigate(`/viaje/${option.trip_id}`);}catch(e){setError(e instanceof Error?e.message:'No pudimos solicitar el asiento.');if(e instanceof Error&&/ya salió|ya no está disponible|cerró sus solicitudes/i.test(e.message))setResults(previous=>previous?.filter(row=>row.trip_id!==option.trip_id)??null);}finally{setBusy(false);}}

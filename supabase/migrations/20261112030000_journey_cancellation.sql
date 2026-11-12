@@ -27,19 +27,3 @@ end; $$;
 revoke all on function public.cancel_journey(uuid,uuid) from public,anon;
 grant execute on function public.cancel_journey(uuid,uuid) to authenticated;
 
-create or replace function public.guard_journey_response() returns trigger language plpgsql security definer set search_path=public as $$
-begin
- if new.status='cancelled' and old.status<>'cancelled' then
-  if old.status not in ('pending','accepted') or old.journey_stage='completed' or not exists(select 1 from public.trips where id=old.trip_id and status in ('scheduled','ongoing')) then
-   raise exception 'Esta participación ya terminó y no se puede cancelar';
-  end if;
- end if;
- if (new.trip_id,new.passenger_id,new.pickup_point::text,new.dropoff_point::text,new.quoted_price,new.pickup_fraction,new.dropoff_fraction) is distinct from (old.trip_id,old.passenger_id,old.pickup_point::text,old.dropoff_point::text,old.quoted_price,old.pickup_fraction,old.dropoff_fraction) then raise exception 'No puedes editar los datos de una solicitud'; end if;
- if new.status='accepted' and old.status<>new.status then
-  if old.status<>'pending' or not exists(select 1 from public.trips where id=new.trip_id and status in ('scheduled','ongoing')) then raise exception 'La solicitud ya no se puede aceptar'; end if;
-  if not exists(select 1 from public.journey_presence g join public.trips t on t.id=g.trip_id where t.id=new.trip_id and g.user_id=t.driver_id and g.recorded_at>now()-interval '30 seconds') or not exists(select 1 from public.journey_presence g where g.trip_id=new.trip_id and g.user_id=new.passenger_id and g.recorded_at>now()-interval '30 seconds') then raise exception 'Conductor y pasajero necesitan ubicación reciente para aceptar'; end if;
- end if;
- return new;
-end; $$;
-
-revoke all on function public.guard_journey_response() from public,anon,authenticated;

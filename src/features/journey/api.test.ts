@@ -34,3 +34,8 @@ it('conserva el radio personalizado al solicitar el asiento',async()=>{
  mocks.rpc.mockResolvedValue({data:'id',error:null});await request(option,origin,destination,750);
  expect(mocks.rpc).toHaveBeenCalledWith('request_journey',expect.objectContaining({p_max_distance_m:750,p_expected_price:4.25}));
 });
+
+it('explica el error si falta la migración de metros',async()=>{
+ mocks.rpc.mockResolvedValue({data:null,error:{code:'PGRST202',message:'function not found'}});
+ await expect(options(origin,destination,500)).rejects.toThrow('migración del selector de metros');
+});

@@ -45,8 +45,8 @@ function StopCard({data,request,now,onAction,busy,gpsReady,actionError}:{data:Ro
  {!eta&&data.status==='ongoing'&&<p className="text-xs text-warning">Tiempo por confirmar: ubicación antigua, fuera de ruta o parada ya superada.</p>}
  <p className="text-xs">GPS del pasajero: {request.gps_ready?'activo':'esperando ubicación'}</p>
  </>}
- {data.is_driver&&data.status==='scheduled'&&request.status==='pending'&&<div className="flex gap-2"><Button disabled={busy} onClick={()=>setPreview(true)}>Visualizar solicitud</Button><Button variant="secondary" disabled={busy} onClick={()=>onAction(()=>respondToRequest(request.id,'rejected'))}>Rechazar</Button></div>}
- {preview&&data.is_driver&&data.status==='scheduled'&&request.status==='pending'&&<JourneyPreview route={data.route} origin={request.origin} destination={request.destination} pickup={request.pickup} dropoff={request.dropoff} price={request.price} driver busy={busy} error={actionError} notice={!gpsReady?'Activa tu ubicación para aceptar al pasajero.':undefined} disabled={!gpsReady||new Date(data.departure_time).getTime()<=now} onClose={()=>setPreview(false)} onConfirm={()=>onAction(()=>respondToRequest(request.id,'accepted'))}/>}
+ {data.is_driver&&['scheduled','ongoing'].includes(data.status)&&request.status==='pending'&&<div className="flex gap-2"><Button disabled={busy} onClick={()=>setPreview(true)}>Visualizar solicitud</Button><Button variant="secondary" disabled={busy} onClick={()=>onAction(()=>respondToRequest(request.id,'rejected'))}>Rechazar</Button></div>}
+ {preview&&data.is_driver&&['scheduled','ongoing'].includes(data.status)&&request.status==='pending'&&<JourneyPreview route={data.route} origin={request.origin} destination={request.destination} pickup={request.pickup} dropoff={request.dropoff} price={request.price} driver busy={busy} error={actionError} notice={!gpsReady?'Activa tu ubicación para aceptar al pasajero.':undefined} disabled={!gpsReady} onClose={()=>setPreview(false)} onConfirm={()=>onAction(()=>respondToRequest(request.id,'accepted'))}/>}
  {data.is_driver&&data.status==='ongoing'&&request.status==='accepted'&&request.stage!=='completed'&&<Button disabled={busy||!gpsReady} onClick={()=>onAction(()=>stage(request.id,request.stage==='waiting'?'onboard':'completed'))}>{request.stage==='waiting'?'Confirmar recojo':'Confirmar bajada'}</Button>}
  {!data.is_driver&&['scheduled','ongoing'].includes(data.status)&&['pending','accepted'].includes(request.status)&&request.stage!=='completed'&&<Button variant="secondary" disabled={busy} onClick={()=>{if(window.confirm('¿Cancelar tu participación en este viaje? Se liberará tu asiento.'))onAction(()=>cancelJourney(data.trip_id,request.id));}}>Cancelar mi viaje</Button>}
  </Card>;
@@ -64,7 +64,7 @@ function RoomScreen({tripId}:{tripId:string}){
   return()=>{disposed=true;window.clearInterval(timer);window.removeEventListener('online',refresh);};
  },[tripId]);
  useEffect(()=>{const timer=window.setInterval(()=>setNow(Date.now()),1000);return()=>window.clearInterval(timer);},[]);
- async function action(work:()=>Promise<unknown>){setBusy(true);try{await work();await refreshRef.current();}catch(e){setError(e instanceof Error?e.message:'No pudimos completar la acción.');}finally{setBusy(false);}}
+ async function action(work:()=>Promise<unknown>){setBusy(true);try{await work();await refreshRef.current();}catch(e){setError(e instanceof Error?e.message:typeof e==='object'&&e!==null&&'message' in e?String(e.message):'No pudimos completar la acción.');}finally{setBusy(false);}}
  if(!data)return <main className="vamo-page"><p role="status">{error??'Abriendo tu viaje…'}</p><Link to="/">Volver al inicio</Link></main>;
  const confirmed=data.requests.filter(r=>r.status==='accepted'&&r.stage!=='completed');
  const participantsReady=confirmed.every(r=>r.gps_ready);

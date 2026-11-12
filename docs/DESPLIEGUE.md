@@ -93,3 +93,11 @@ Validar en Supabase: buscar antes de iniciar, iniciar con solicitudes pendientes
 Cada opción del pasajero abre `JourneyPreview` a pantalla completa con inicio, recojo, bajada, destino, polilínea del conductor y rutas peatonales disponibles de Maps. Muestra metros/minutos de ambas caminatas y aporte antes de habilitar solicitar. Cada solicitud pendiente del conductor abre la misma vista antes de aceptar. Confirmar sigue pasando por las validaciones del servidor y no cambia la ruta. No se consulta ni expone GPS en vivo de pasajeros pendientes: solo sus puntos solicitados y las paradas acordables.
 
 No requiere migración adicional. Requiere las migraciones anteriores para distancia configurable y cierre al partir. El mapa conserva el zoom en actualizaciones que no cambien coordenadas. La confirmación se deshabilita sin estimaciones peatonales válidas. Verificar visualmente en móvil las cuatro etiquetas, ambas caminatas, cierre/retorno, error de solicitud/aceptación y el cierre por salida del conductor.
+
+## Recogida durante viaje (20261112060000)
+
+Sustituye la regla anterior que cerraba al iniciar. Muestra viajes programados aunque venza la hora y viajes en curso con GPS del conductor de menos de 30 s, dentro de 200 m de su trazado y aún antes o en el punto de recojo. Búsqueda, inserción y aceptación revalidan ese avance. Al iniciar no se rechazan pendientes; solicitudes previamente rechazadas por la regla antigua no se restauran automáticamente. La ordenación de viajes en curso estima el recojo desde la posición actual.
+
+Aplicar primero las migraciones pendientes, incluida `20261112040000_passenger_route_distance.sql`; publicar frontend no crea RPC en Supabase. Probar 100/500/1000/2000 m, solicitar y aceptar en curso antes del recojo, rechazar tras superarlo y con GPS antiguo/fuera de ruta. Revisar simultaneidad de movimiento y aceptación. No se considera probado en la base por compilar o pasar pruebas locales.
+
+Las migraciones pendientes 030000 y 050000 se consolidaron antes de su primera aplicación en esta base: no se ejecuta el cierre automático obsoleto de solicitudes al iniciar. Se aplicaron y verificaron las versiones 030000, 040000, 050000 y 060000 directamente en Supabase el 12/11/2026. La versión 20261112171910 restringe ejecución directa de los triggers internos; no cambia permisos de las RPC públicas.

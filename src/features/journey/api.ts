@@ -7,7 +7,7 @@ export {requireGps} from './gps';
 export type {GpsReading} from './gps';
 export async function options(origin:LatLng,destination:LatLng,maxDistance=150):Promise<JourneyOption[]>{
  const {data,error}=await supabase.rpc('journey_options',{p_origin_lat:origin.lat,p_origin_lng:origin.lng,p_dest_lat:destination.lat,p_dest_lng:destination.lng,...(maxDistance===150?{}:{p_max_distance_m:maxDistance})});
- if(error)throw error;return data??[];
+ if(error)throw new Error(error.code==='PGRST202'?'La base de datos necesita actualizarse para usar esa distancia. Todavía no se ha aplicado la migración del selector de metros.':error.message||'No pudimos consultar los viajes.');return data??[];
 }
 export async function request(option:JourneyOption,origin:LatLng,destination:LatLng,maxDistance=150){
  const gps=await requireGps();
