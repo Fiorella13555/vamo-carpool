@@ -1,16 +1,10 @@
 import {supabase} from '../../lib/supabase';
 import type {LatLng} from '../../lib/geo';
 import type {JourneyOption,JourneyRoom} from './types';
-export interface GpsReading extends LatLng {accuracyM:number;recordedAt:string}
-export function requireGps():Promise<GpsReading>{
- return new Promise((resolve,reject)=>{
-  if(!navigator.geolocation){reject(new Error('Este navegador no permite ubicación. Abre Vamo en Safari o Chrome.'));return;}
-  navigator.geolocation.getCurrentPosition(p=>{
-   if(![p.coords.latitude,p.coords.longitude,p.coords.accuracy,p.timestamp].every(Number.isFinite)||p.coords.accuracy<0||p.coords.accuracy>100||Date.now()-p.timestamp>30000||p.timestamp>Date.now()+10000){reject(new Error('Necesitamos una ubicación reciente y precisa. Activa el GPS y vuelve a intentar.'));return;}
-   resolve({lat:p.coords.latitude,lng:p.coords.longitude,accuracyM:p.coords.accuracy,recordedAt:new Date(p.timestamp).toISOString()});
-  },()=>reject(new Error('Debes permitir tu ubicación para participar en el viaje.')), {enableHighAccuracy:true,maximumAge:0,timeout:15000});
- });
-}
+import {requireGps} from './gps';
+import type {GpsReading} from './gps';
+export {requireGps} from './gps';
+export type {GpsReading} from './gps';
 export async function options(origin:LatLng,destination:LatLng):Promise<JourneyOption[]>{
  const {data,error}=await supabase.rpc('journey_options',{p_origin_lat:origin.lat,p_origin_lng:origin.lng,p_dest_lat:destination.lat,p_dest_lng:destination.lng});
  if(error)throw error;return data??[];

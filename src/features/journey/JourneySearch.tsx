@@ -26,7 +26,7 @@ function Option({option,origin,destination,onSelect,busy,onMetrics}:{option:Jour
  <p className="text-xs text-text-secondary">La ruta del conductor se mantiene. El aporte corresponde al tramo compartido; no se cobra desde la app.</p>
  {!eta&&<p className="text-xs text-warning">Esperando ubicación reciente del conductor para estimar los tiempos.</p>}
  {eta?.canReachPickup===false&&<p className="text-xs text-error">No alcanzarías el punto caminando antes del recojo estimado.</p>}
- <Button disabled={busy||toPickup===null||fromDropoff===null||eta===null||eta.canReachPickup===false} onClick={onSelect}>Elegir y solicitar asiento</Button></Card>;
+ <Button loading={busy} disabled={busy||toPickup===null||fromDropoff===null||eta===null||eta.canReachPickup===false} onClick={onSelect}>{busy?'Comprobando ubicación y enviando…':'Elegir y solicitar asiento'}</Button></Card>;
 }
 function Search(){
  const navigate=useNavigate();const [origin,setOrigin]=useState<LatLng|null>(null),[destination,setDestination]=useState<LatLng|null>(null);
