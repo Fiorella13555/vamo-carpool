@@ -8,12 +8,8 @@ import { fetchRatingsGiven } from "./api";
 import { RatingForm } from "./RatingForm";
 import { Card, Chip, EmptyState } from "../../components/ui";
 
-const REQUEST_STATUS_LABEL: Record<string, string> = {
-  pending: "Esperando al conductor",
-  accepted: "Confirmada por el conductor",
-  rejected: "Rechazada",
-  cancelled: "Cancelada",
-};
+import {isRequestActive,requestLabel} from '../trips/lifecycle';
+
 const REQUEST_STATUS_TONE: Record<string, "info" | "success" | "error" | "neutral"> = {
   pending: "info",
   accepted: "success",
@@ -23,6 +19,7 @@ const REQUEST_STATUS_TONE: Record<string, "info" | "success" | "error" | "neutra
 
 export function MyRequestsPage() {
   const { profile } = useAuth();
+  const [section,setSection]=useState<'active'|'history'>('active');
   const [requests, setRequests] = useState<PickupRequestWithTrip[]>([]);
   const [ratedTripIds, setRatedTripIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -59,6 +56,7 @@ export function MyRequestsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.id]);
 
+  const visibleRequests=requests.filter(req=>isRequestActive(req)===(section==='active'));
   if (loading) return <p className="p-6 text-text-secondary">Cargando tus solicitudes...</p>;
 
   return (
@@ -66,14 +64,15 @@ export function MyRequestsPage() {
       <h1 className="mb-4 text-xl font-extrabold text-text-primary">Mis solicitudes</h1>
       {error && <p className="mb-4 rounded-sm bg-error-soft px-3 py-2 text-sm font-medium text-error">{error}</p>}
 
-      {requests.length === 0 && (
-        <EmptyState icon={ClipboardList} title="Todavía no has solicitado ningún recojo" />
+      <div role="group" aria-label="Lista de solicitudes" className="mb-4 flex gap-2">{(['active','history'] as const).map(value=><button key={value} aria-pressed={section===value} onClick={()=>setSection(value)} className={`min-h-11 rounded-lg border px-4 font-bold ${section===value?'bg-accent-500 text-navy-900':'bg-bg-surface text-text-primary'}`}>{value==='active'?'Activos':'Historial'} ({requests.filter(r=>isRequestActive(r)===(value==='active')).length})</button>)}</div>
+      {visibleRequests.length === 0 && (
+        <EmptyState icon={ClipboardList} title={section==='active'?'No tienes solicitudes activas':'Todavía no hay viajes en tu historial'} />
       )}
 
       <div className="flex flex-col gap-4">
-        {requests.map((req) => (
+        {visibleRequests.map((req) => (
           <Card key={req.id} className="flex flex-col gap-2">
-            <Link to={`/viaje/${req.trip_id}`} className="min-h-11 rounded-lg bg-accent-500 p-3 text-center font-bold text-navy-900">Abrir mi viaje y seguimiento</Link>
+            <Link to={`/viaje/${req.trip_id}`} className="min-h-11 rounded-lg bg-accent-500 p-3 text-center font-bold text-navy-900">{section==='active'?'Abrir mi viaje y seguimiento':'Ver detalle en el historial'}</Link>
             <div className="flex items-start justify-between gap-2">
               <div>
                 <h2 className="font-bold text-text-primary">{req.trip?.avenida ?? "Viaje"}</h2>
@@ -85,7 +84,7 @@ export function MyRequestsPage() {
                 )}
               </div>
               <Chip tone={REQUEST_STATUS_TONE[req.status] ?? "neutral"}>
-                {REQUEST_STATUS_LABEL[req.status] ?? req.status}
+                {requestLabel(req)}
               </Chip>
             </div>
             <p className="text-sm text-text-secondary">

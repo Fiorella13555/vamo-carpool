@@ -12,6 +12,8 @@ import { fetchRatingsGiven } from "../ratings/api";
 import { RatingForm } from "../ratings/RatingForm";
 import { Avatar, Card, Chip, EmptyState } from "../../components/ui";
 
+import {isTripActive} from './lifecycle';
+
 const TRIP_STATUS_LABEL: Record<TripStatus, string> = {
   scheduled: "Programado",
   ongoing: "En curso",
@@ -27,6 +29,7 @@ const TRIP_STATUS_TONE: Record<TripStatus, "info" | "success" | "neutral" | "err
 
 export function MyTripsPage() {
   const { profile } = useAuth();
+  const [section,setSection]=useState<'active'|'history'>('active');
   const [trips, setTrips] = useState<Trip[]>([]);
   const [requestsByTrip, setRequestsByTrip] = useState<Map<string, PickupRequestWithPassenger[]>>(
     new Map(),
@@ -72,16 +75,18 @@ export function MyTripsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile?.id]);
 
+  const visibleTrips=trips.filter(trip=>isTripActive(trip)===(section==='active'));
   if (loading) return <p className="p-6 text-text-secondary">Cargando tus viajes...</p>;
 
   return (
     <div className="safe-x mx-auto min-h-dvh max-w-md bg-bg-page pb-28 pt-6">
       <h1 className="mb-4 text-xl font-extrabold text-text-primary">Mis viajes</h1>
       {error && <p className="mb-4 rounded-sm bg-error-soft px-3 py-2 text-sm font-medium text-error">{error}</p>}
-      {trips.length === 0 && <EmptyState icon={Car} title="Todavía no has publicado ningún viaje" />}
+      <div role="group" aria-label="Lista de viajes" className="mb-4 flex gap-2">{(['active','history'] as const).map(value=><button key={value} aria-pressed={section===value} onClick={()=>setSection(value)} className={`min-h-11 rounded-lg border px-4 font-bold ${section===value?'bg-accent-500 text-navy-900':'bg-bg-surface text-text-primary'}`}>{value==='active'?'Activos':'Historial'} ({trips.filter(t=>isTripActive(t)===(value==='active')).length})</button>)}</div>
+      {visibleTrips.length === 0 && <EmptyState icon={Car} title={section==='active'?'No tienes viajes activos':'Todavía no hay viajes en tu historial'} />}
 
       <div className="flex flex-col gap-4">
-        {trips.map((trip) => {
+        {visibleTrips.map((trip) => {
           const requests = requestsByTrip.get(trip.id) ?? [];
           const pending = requests.filter((r) => r.status === "pending");
           const accepted = requests.filter((r) => r.status === "accepted");
@@ -102,7 +107,7 @@ export function MyTripsPage() {
                 {trip.seats_available} / {trip.seats_total} asientos libres
               </p>
 
-              <Link to={`/viaje/${trip.id}`} className="min-h-11 rounded-lg bg-accent-500 p-3 text-center font-bold text-navy-900">Abrir viaje · solicitudes, paradas y seguimiento</Link>
+              <Link to={`/viaje/${trip.id}`} className="min-h-11 rounded-lg bg-accent-500 p-3 text-center font-bold text-navy-900">{section==='active'?'Abrir viaje · solicitudes y seguimiento':'Ver viaje en el historial'}</Link>
               <p className="text-sm text-text-secondary">{pending.length} solicitudes pendientes · {accepted.length} confirmadas</p>
 
               {accepted.length > 0 && (

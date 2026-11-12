@@ -101,3 +101,11 @@ Sustituye la regla anterior que cerraba al iniciar. Muestra viajes programados a
 Aplicar primero las migraciones pendientes, incluida `20261112040000_passenger_route_distance.sql`; publicar frontend no crea RPC en Supabase. Probar 100/500/1000/2000 m, solicitar y aceptar en curso antes del recojo, rechazar tras superarlo y con GPS antiguo/fuera de ruta. Revisar simultaneidad de movimiento y aceptación. No se considera probado en la base por compilar o pasar pruebas locales.
 
 Las migraciones pendientes 030000 y 050000 se consolidaron antes de su primera aplicación en esta base: no se ejecuta el cierre automático obsoleto de solicitudes al iniciar. Se aplicaron y verificaron las versiones 030000, 040000, 050000 y 060000 directamente en Supabase el 12/11/2026. La versión 20261112171910 restringe ejecución directa de los triggers internos; no cambia permisos de las RPC públicas.
+
+## Activos, historial y solicitudes recibidas
+
+Las listas de ambos roles muestran Activos por defecto y un Historial separado. Se conserva el historial de finalizados/cancelados, rechazados y tramos del pasajero completados aunque el conductor siga viajando. Los estados visibles reflejan la finalización/cancelación del viaje completo. No se eliminan registros ni se marca un viaje como terminado solo por su fecha.
+
+RequestInbox consulta cada 3 s los viajes activos propios y sus solicitudes pendientes sin depender de cargar perfiles de pasajeros. Funciona mientras Vamo está abierto, también al recuperar foco, conexión o visibilidad. Cada aviso enlaza el viaje correcto para visualizar y aceptar/rechazar; no duplica la alerta del viaje abierto y no mezcla cuentas al cambiar sesión. Ante fallo de consulta muestra un aviso en lugar de aparentar una bandeja vacía. No envía push ni notificaciones con la app cerrada.
+
+Se comprobó con RLS y rol authenticated que una solicitud pendiente existente es visible para el conductor propietario (solo lectura). Eso no verifica todos los dispositivos ni una solicitud que haya fallado antes de guardarse por GPS u otro requisito. El código no afirma que se envió una solicitud si su RPC devuelve error.

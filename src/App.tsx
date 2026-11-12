@@ -21,6 +21,7 @@ import { AdminAlertsPage } from "./features/admin/AdminAlertsPage";
 import { DesignSystemPage } from "./features/design-system/DesignSystemPage";
 import { ToastProvider } from "./components/ui";
 import "./App.css";
+import {RequestInbox} from "./features/driver/RequestInbox";
 import { BackNavigation } from "./components/BackNavigation";
 import { ResumeJourney } from "./features/journey/ResumeJourney";
 import { ForecastPage } from "./features/forecast/ForecastPage";
@@ -126,6 +127,7 @@ function App() {
           </Routes>
           <ResumeJourney/>
           <AppNavigation/>
+          <RequestInbox/>
         </BrowserRouter>
         </LiveLocationProvider>
       </AuthProvider>
