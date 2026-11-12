@@ -11,7 +11,7 @@ import { createTrip } from "./api";
 import { fetchMyVehicle } from "../vehicles/api";
 import type { Vehicle } from "../../types/vehicle";
 import { isWatchlistClear } from "../../types/profile";
-import { BottomSheet, Button, EmptyState, Input, StatusScreen } from "../../components/ui";
+import { Button, EmptyState, Input, StatusScreen } from "../../components/ui";
 
 const LIMA_CENTER = { lat: -12.09, lng: -77.02 };
 
@@ -159,7 +159,8 @@ function PublishTripForm() {
   }
 
   return (
-    <div className="relative h-[calc(100dvh-60px)] overflow-hidden bg-bg-page">
+    <div className="min-h-dvh bg-bg-page pb-28">
+      <div className="relative h-[52dvh] min-h-80 w-full">
       <Map
         mapId={import.meta.env.VITE_GOOGLE_MAPS_MAP_ID || "DEMO_MAP_ID"}
         defaultCenter={LIMA_CENTER}
@@ -168,13 +169,14 @@ function PublishTripForm() {
         className="h-full w-full"
         onClick={(e) => e.detail.latLng && handleMapClick(e.detail.latLng)}
       >
-        <FitJourney origin={origin} destination={destination}/>
+        <FitJourney origin={origin} destination={destination} route={route} overlay={false}/>
         {origin && <AdvancedMarker position={origin} title="Origen" />}
         {destination && <AdvancedMarker position={destination} title="Destino" />}
         {route && <Polyline path={route} strokeColor="#1D4ED8" strokeWeight={4} />}
       </Map>
+      </div>
 
-      <BottomSheet className={`flex flex-col gap-3 px-4 pb-4 ${pickMode ? "!max-h-[25dvh]" : ""}`}>
+      <section className="safe-x mx-auto flex max-w-3xl flex-col gap-4 rounded-t-xl bg-bg-surface px-4 py-5">
         <div>
           <h1 className="text-lg font-extrabold text-text-primary">Publicar viaje</h1>
           <p className="text-sm text-text-secondary">
@@ -226,7 +228,7 @@ function PublishTripForm() {
             Publicar viaje
           </Button>
         </form>
-      </BottomSheet>
+      </section>
     </div>
   );
 }

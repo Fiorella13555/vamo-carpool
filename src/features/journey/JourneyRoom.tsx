@@ -7,9 +7,8 @@ import {Button,Card} from '../../components/ui';
 import {FitJourney} from '../../components/LocationSearch';
 import type {LatLng} from '../../lib/geo';
 import type {JourneyRoom as Room,JourneyRequest,Position} from './types';
-import {room,stage} from './api';
+import {room,stage,cancelJourney} from './api';
 import {finishTrip,respondToRequest,startTrip} from '../trips/api';
-import {supabase} from '../../lib/supabase';
 import {useJourneyGps} from './useJourneyGps';
 import {estimateArrival,minutes,projectOnRoute,soles} from './estimate';
 import {DriverAdvisor} from '../driver/DriverAdvisor';
@@ -43,9 +42,9 @@ function StopCard({data,request,now,onAction,busy,gpsReady}:{data:Room;request:J
  {!eta&&data.status==='ongoing'&&<p className="text-xs text-warning">Tiempo por confirmar: ubicación antigua, fuera de ruta o parada ya superada.</p>}
  <p className="text-xs">GPS del pasajero: {request.gps_ready?'activo':'esperando ubicación'}</p>
  </>}
- {data.is_driver&&request.status==='pending'&&<div className="flex gap-2"><Button disabled={busy||!gpsReady} onClick={()=>onAction(()=>respondToRequest(request.id,'accepted'))}>Aceptar</Button><Button variant="secondary" disabled={busy} onClick={()=>onAction(()=>respondToRequest(request.id,'rejected'))}>Rechazar</Button></div>}
+ {data.is_driver&&['scheduled','ongoing'].includes(data.status)&&request.status==='pending'&&<div className="flex gap-2"><Button disabled={busy||!gpsReady} onClick={()=>onAction(()=>respondToRequest(request.id,'accepted'))}>Aceptar</Button><Button variant="secondary" disabled={busy} onClick={()=>onAction(()=>respondToRequest(request.id,'rejected'))}>Rechazar</Button></div>}
  {data.is_driver&&data.status==='ongoing'&&request.status==='accepted'&&request.stage!=='completed'&&<Button disabled={busy||!gpsReady} onClick={()=>onAction(()=>stage(request.id,request.stage==='waiting'?'onboard':'completed'))}>{request.stage==='waiting'?'Confirmar recojo':'Confirmar bajada'}</Button>}
- {!data.is_driver&&request.status==='pending'&&<Button variant="secondary" disabled={busy} onClick={()=>onAction(async()=>{const {error}=await supabase.from('pickup_requests').update({status:'cancelled'}).eq('id',request.id);if(error)throw error;})}>Cancelar solicitud</Button>}
+ {!data.is_driver&&['scheduled','ongoing'].includes(data.status)&&['pending','accepted'].includes(request.status)&&request.stage!=='completed'&&<Button variant="secondary" disabled={busy} onClick={()=>{if(window.confirm('¿Cancelar tu participación en este viaje? Se liberará tu asiento.'))onAction(()=>cancelJourney(data.trip_id,request.id));}}>Cancelar mi viaje</Button>}
  </Card>;
 }
 function RoomScreen({tripId}:{tripId:string}){
@@ -70,7 +69,7 @@ function RoomScreen({tripId}:{tripId:string}){
  return <main className="flex min-h-dvh flex-col bg-bg-page pb-6">
  <header className="safe-x mx-auto flex w-full max-w-3xl items-center justify-between gap-3 py-4 text-text-on-dark"><div><p className="text-xs text-accent-500">Vamo · tu viaje</p><h1 className="text-lg font-extrabold">{data.is_driver?'Tu ruta compartida':`Vamos con ${data.driver_name}`}</h1><p className="text-xs">{data.avenida}</p></div><Link to="/" className="text-sm">Inicio</Link></header>
  {!isFinished&&<div className="relative h-[43dvh] min-h-64"><Map className="h-full w-full" defaultCenter={data.route[0]??{lat:-12.09,lng:-77.02}} defaultZoom={13} mapId={import.meta.env.VITE_GOOGLE_MAPS_MAP_ID||'DEMO_MAP_ID'} disableDefaultUI>
- <FitJourney origin={data.route[0]??null} destination={data.route[data.route.length-1]??null}/>
+ <FitJourney origin={data.route[0]??null} destination={data.route[data.route.length-1]??null} route={data.route} overlay={false}/>
  <Polyline path={data.route} strokeColor="#0B2345" strokeWeight={5}/>
  {!isFinished&&data.driver_location&&<MovingCar position={data.driver_location}/>}
  {!isFinished&&visibleRequests.filter(r=>r.status==='accepted'||!data.is_driver).map((r,i)=><div key={r.id}>
@@ -87,6 +86,7 @@ function RoomScreen({tripId}:{tripId:string}){
  {error&&<p role="alert" className="rounded-lg bg-error-soft p-3 text-sm text-error">{error}</p>}
  {data.is_driver&&data.status==='scheduled'&&<><p className="text-sm text-text-on-dark-muted">{participantsReady?'Pasajeros confirmados con GPS activo.':'Esperando GPS de todos los pasajeros confirmados.'}</p><Button loading={busy} disabled={busy||!gps.ready||!participantsReady} onClick={()=>action(async()=>{await startTrip(tripId);})}>Iniciar viaje</Button></>}
  {data.is_driver&&data.status==='ongoing'&&<Button variant="secondary" disabled={busy} onClick={()=>action(()=>finishTrip(tripId))}>Finalizar viaje</Button>}
+ {data.is_driver&&!isFinished&&<Button variant="danger" disabled={busy} onClick={()=>{if(window.confirm('¿Cancelar este viaje para todos los pasajeros?'))void action(()=>cancelJourney(tripId));}}>Cancelar viaje</Button>}
  {data.is_driver&&!isFinished&&<DriverAdvisor room={data} now={now}/>}
  {isFinished&&(data.is_driver||own?.status==='accepted')&&<JourneyHistoryPanel tripId={tripId}/>}
  {visibleRequests.map(r=><StopCard key={r.id} data={data} request={r} now={now} busy={busy} gpsReady={gps.ready} onAction={action}/>)}

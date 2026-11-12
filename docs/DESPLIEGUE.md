@@ -63,3 +63,11 @@ La fórmula es `round(km_del_tramo * 0.80 * 1.25, 2)`, en soles por pasajero. `k
 Búsqueda y registro de solicitud usan `journey_contribution`; la solicitud conserva su `quoted_price` y `request_journey` rechaza una cotización diferente de la mostrada. Las solicitudes ya existentes conservan su importe, incluso al aceptar, iniciar o finalizar. Las nuevas búsquedas usan la fórmula también en viajes publicados anteriormente. El trigger de viajes reemplaza cualquier monto manual al insertar o modificar ruta/importe. No se aplica un backfill sobre viajes con acuerdos.
 
 Comprobar en Supabase/PostGIS `supabase/tests/automatic_contributions.sql`, luego usar dos cuentas: ver aporte al comparar, solicitar, comprobar el mismo aporte en la solicitud del conductor y aceptar. Las pruebas locales de frontend y el análisis sintáctico no sustituyen esta comprobación de base de datos.
+
+## Enfoque de ruta y cancelación (20261112030000)
+
+Publicar viaje usa un mapa de 52dvh (mínimo 320px) separado del formulario. El encuadre incluye todos los puntos de la polilínea y se adapta al tamaño del contenedor.
+
+Aplicar `20261112030000_journey_cancellation.sql` antes de usar los botones de cancelación. `cancel_journey` comprueba la identidad y el viaje, bloquea primero el viaje y luego la solicitud. El pasajero puede cancelar una participación pendiente o aceptada aún no completada; los triggers existentes restituyen el asiento y eliminan su ubicación. El conductor puede cancelar un viaje programado o en curso; se conserva la aceptación anterior para el historial, pero el viaje deja de admitir actividad y se elimina la ubicación en vivo. La cancelación no exige GPS. No cambia aportes ni procesa cobros o reembolsos.
+
+Validar en Supabase con dos cuentas: cancelación pendiente, cancelación aceptada (asiento vuelve a estar disponible), cancelación del conductor con pasajeros aceptados (ambos ven viaje cancelado y se detiene GPS), intentos de cancelar datos ajenos o viajes finalizados (rechazo), cancelación simultánea con aceptación, y conservación del historial. La otra pantalla se actualiza con el polling existente de 3 segundos. No se enviaron notificaciones push.

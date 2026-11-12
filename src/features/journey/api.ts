@@ -17,3 +17,8 @@ export async function request(option:JourneyOption,origin:LatLng,destination:Lat
 export async function room(id:string):Promise<JourneyRoom>{const {data,error}=await supabase.rpc('journey_room',{p_trip_id:id});if(error)throw error;return data;}
 export async function heartbeat(id:string,gps:GpsReading){const {error}=await supabase.rpc('journey_gps',{p_trip_id:id,p_lat:gps.lat,p_lng:gps.lng,p_accuracy:gps.accuracyM,p_recorded_at:gps.recordedAt});if(error)throw error;}
 export async function stage(id:string,value:'onboard'|'completed'){const {error}=await supabase.rpc('journey_stage',{p_request_id:id,p_stage:value});if(error)throw error;}
+
+export async function cancelJourney(tripId:string,requestId?:string){
+ const {error}=await supabase.rpc('cancel_journey',{p_trip_id:tripId,p_request_id:requestId??null});
+ if(error)throw error;
+}

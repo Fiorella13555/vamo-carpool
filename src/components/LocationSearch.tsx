@@ -93,14 +93,22 @@ export function LocationSearch({ label, point, onSelect, onClear, onMap }: {
   </section>;
 }
 
-export function FitJourney({ origin, destination }: { origin:LatLng|null; destination:LatLng|null }) {
+export function FitJourney({ origin, destination, route, overlay = true }: { origin:LatLng|null; destination:LatLng|null; route?:LatLng[]|null; overlay?:boolean }) {
   const map = useMap();
   useEffect(() => {
     if (!map || (!origin && !destination)) return;
-    if (origin && destination) {
-      const bounds = new google.maps.LatLngBounds(); bounds.extend(origin); bounds.extend(destination);
-      map.fitBounds(bounds, {top:60,left:30,right:30,bottom:Math.min(window.innerHeight*.55,400)});
-    } else { map.panTo((origin ?? destination)!); map.setZoom(15); }
-  }, [map,origin,destination]);
+    const fit = () => {
+      if (origin && destination) {
+        const bounds = new google.maps.LatLngBounds();
+        for (const point of route?.length ? route : [origin, destination]) bounds.extend(point);
+        const height = map.getDiv().clientHeight;
+        map.fitBounds(bounds, {top:40,left:32,right:32,bottom:overlay?Math.min(height*.45,300):40});
+      } else { map.panTo((origin ?? destination)!); map.setZoom(15); }
+    };
+    fit();
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(fit);
+    observer?.observe(map.getDiv());
+    return () => observer?.disconnect();
+  }, [map,origin,destination,route,overlay]);
   return null;
 }
