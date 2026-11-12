@@ -8,11 +8,13 @@ import {isInLima} from '../../lib/geo';
 import {options,request} from './api';
 import type {JourneyOption} from './types';
 import {localDateTime,pickupLabel,scheduledOptions} from './schedule';
+import {JourneyPreview} from './JourneyPreview';
 import {useWalkingRoute} from './useWalking';
 import {estimateArrival,minutes,soles} from './estimate';
 import {PassengerPreferences} from '../passenger/PassengerPreferences';
 import {PROFILES,ratioMatrix,rankPassengerOptions,type PassengerMetrics,type Matrix} from '../passenger/decision';
-function Option({option,origin,destination,onSelect,busy,onMetrics}:{option:JourneyOption;origin:LatLng;destination:LatLng;onSelect:()=>void;busy:boolean;onMetrics:(id:string,metrics:PassengerMetrics|null)=>void}){
+function Option({option,origin,destination,onSelect,busy,onMetrics,error}:{option:JourneyOption;origin:LatLng;destination:LatLng;onSelect:()=>void;busy:boolean;error:string|null;onMetrics:(id:string,metrics:PassengerMetrics|null)=>void}){
+ const [preview,setPreview]=useState(false);
  const [now,setNow]=useState(()=>Date.now());
  useEffect(()=>{const timer=setInterval(()=>setNow(Date.now()),10000);return()=>clearInterval(timer);},[]);
  const pickupWalk=useWalkingRoute(origin,option.pickup),dropoffWalk=useWalkingRoute(option.dropoff,destination);
@@ -29,7 +31,9 @@ function Option({option,origin,destination,onSelect,busy,onMetrics}:{option:Jour
  <p className="text-xs text-text-secondary">La ruta del conductor se mantiene. El aporte corresponde al tramo compartido; no se cobra desde la app.</p>
  {!eta&&<p className="text-xs text-warning">Esperando ubicación reciente del conductor para estimar los tiempos.</p>}
  {eta?.canReachPickup===false&&<p className="text-xs text-error">No alcanzarías el punto caminando antes del recojo estimado.</p>}
- <Button loading={busy} disabled={busy||toPickup===null||fromDropoff===null||eta===null||eta.canReachPickup===false} onClick={onSelect}>{busy?'Comprobando ubicación y enviando…':'Elegir y solicitar asiento'}</Button></Card>;
+ <Button disabled={busy} onClick={()=>setPreview(true)}>Visualizar viaje</Button>
+ {preview&&<JourneyPreview route={option.route} origin={origin} destination={destination} pickup={option.pickup} dropoff={option.dropoff} price={option.price} busy={busy} error={error} notice={eta?.canReachPickup===false?'No alcanzarías el recojo caminando antes de la hora estimada.':undefined} disabled={eta===null||eta.canReachPickup===false||option.status!=='scheduled'||new Date(option.departure_time).getTime()<=now} onClose={()=>setPreview(false)} onConfirm={onSelect}/>}
+ </Card>;
 }
 function Search(){
  const navigate=useNavigate();const [origin,setOrigin]=useState<LatLng|null>(null),[destination,setDestination]=useState<LatLng|null>(null);
@@ -95,7 +99,7 @@ function Search(){
  {!searching&&!error&&!!ordered?.length&&<p role="status" className="rounded-lg bg-bg-sunken p-4 text-sm font-bold">{ordered!.length===1?'Encontramos 1 viaje para ti':`Encontramos ${ordered!.length} viajes para ti`}</p>}
  </div>
  <PassengerPreferences matrix={matrix} onChange={setMatrix}/>
- {origin&&destination&&ordered?.map(option=><section key={option.trip_id} onMouseEnter={()=>setSelected(option)} onFocus={()=>setSelected(option)}><button className="min-h-11 text-sm font-bold text-accent-700" onClick={()=>setSelected(option)}>Ver recojo y bajada en el mapa</button>{positions.has(option.trip_id)&&<p className="rounded-lg bg-bg-sunken p-3 text-sm text-navy-900"><strong>Afinidad contigo · compatibilidad {(positions.get(option.trip_id)!.score*100).toFixed(0)}/100</strong><br/>{positions.get(option.trip_id)!.explanation}</p>}<Option onMetrics={onMetrics} option={option} origin={origin} destination={destination} busy={busy} onSelect={()=>select(option)}/></section>)}
+ {origin&&destination&&ordered?.map(option=><section key={option.trip_id} onMouseEnter={()=>setSelected(option)} onFocus={()=>setSelected(option)}>{positions.has(option.trip_id)&&<p className="rounded-lg bg-bg-sunken p-3 text-sm text-navy-900"><strong>Afinidad contigo · compatibilidad {(positions.get(option.trip_id)!.score*100).toFixed(0)}/100</strong><br/>{positions.get(option.trip_id)!.explanation}</p>}<Option error={error} onMetrics={onMetrics} option={option} origin={origin} destination={destination} busy={busy} onSelect={()=>select(option)}/></section>)}
  <p className="text-xs text-text-secondary">Tiempos aproximados: duración publicada distribuida sobre la ruta original y caminatas consultadas en Maps. No incluyen tráfico actualizado ni detenciones imprevistas. El inicio nunca se retrasa automáticamente para esperarte.</p>
  </BottomSheet></main>;
 }

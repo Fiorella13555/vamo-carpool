@@ -10,7 +10,7 @@ it('muestra los metros de la ruta peatonal devueltos por Maps',async()=>{
  mocks.compute.mockResolvedValue({routes:[{durationMillis:180000,distanceMeters:245}]});
  const {result}=renderHook(()=>useWalkingRoute({lat:-12.1,lng:-77.03},{lat:-12.101,lng:-77.03}));
  await waitFor(()=>expect(result.current?.meters).toBe(245));expect(result.current?.seconds).toBe(180);
- expect(mocks.compute).toHaveBeenCalledWith(expect.objectContaining({travelMode:'WALKING',fields:['durationMillis','distanceMeters']}));
+ expect(mocks.compute).toHaveBeenCalledWith(expect.objectContaining({travelMode:'WALKING',fields:['durationMillis','distanceMeters','path']}));
 });
 it('no inventa una distancia cuando Maps no puede calcular la caminata',async()=>{
  vi.stubGlobal('google',{maps:{TravelMode:{WALKING:'WALKING'}}});mocks.compute.mockRejectedValue(new Error('no walking route'));

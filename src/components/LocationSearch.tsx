@@ -95,7 +95,9 @@ export function LocationSearch({ label, point, onSelect, onClear, onMap }: {
 
 export function FitJourney({ origin, destination, route, overlay = true }: { origin:LatLng|null; destination:LatLng|null; route?:LatLng[]|null; overlay?:boolean }) {
   const map = useMap();
+  const frame=JSON.stringify({origin,destination,route,overlay});
   useEffect(() => {
+    const {origin,destination,route,overlay}=JSON.parse(frame) as {origin:LatLng|null;destination:LatLng|null;route?:LatLng[]|null;overlay:boolean};
     if (!map || (!origin && !destination)) return;
     const fit = () => {
       if (origin && destination) {
@@ -109,6 +111,6 @@ export function FitJourney({ origin, destination, route, overlay = true }: { ori
     const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(fit);
     observer?.observe(map.getDiv());
     return () => observer?.disconnect();
-  }, [map,origin,destination,route,overlay]);
+  }, [map,frame]);
   return null;
 }

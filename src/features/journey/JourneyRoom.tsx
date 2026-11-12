@@ -13,7 +13,8 @@ import {useJourneyGps} from './useJourneyGps';
 import {estimateArrival,minutes,projectOnRoute,soles} from './estimate';
 import {DriverAdvisor} from '../driver/DriverAdvisor';
 import {JourneyHistoryPanel} from '../history/JourneyHistoryPanel';
-import {useWalking} from './useWalking';
+import {useWalkingRoute} from './useWalking';
+import {JourneyPreview} from './JourneyPreview';
 
 function MovingCar({position}:{position:Position}){
  const [shown,setShown]=useState<LatLng>(position);const last=useRef<LatLng>(position);
@@ -24,8 +25,10 @@ function MovingCar({position}:{position:Position}){
  },[position.lat,position.lng]);
  return <AdvancedMarker position={shown} title="Conductor en tiempo real"><div className="rounded-full border-2 border-white bg-navy-900 p-2 text-white shadow-lg"><Car size={25}/></div></AdvancedMarker>;
 }
-function StopCard({data,request,now,onAction,busy,gpsReady}:{data:Room;request:JourneyRequest;now:number;onAction:(action:()=>Promise<unknown>)=>void;busy:boolean;gpsReady:boolean}){
- const walkPickup=useWalking(request.origin,request.pickup),walkEnd=useWalking(request.dropoff,request.destination);
+function StopCard({data,request,now,onAction,busy,gpsReady,actionError}:{data:Room;request:JourneyRequest;now:number;onAction:(action:()=>Promise<unknown>)=>void;busy:boolean;gpsReady:boolean;actionError:string|null}){
+ const [preview,setPreview]=useState(false);
+ const pickupWalk=useWalkingRoute(request.origin,request.pickup),dropoffWalk=useWalkingRoute(request.dropoff,request.destination);
+ const walkPickup=pickupWalk?.seconds??null,walkEnd=dropoffWalk?.seconds??null;
  const projection=data.driver_location?projectOnRoute(data.driver_location,data.route):null;
  const progress=projection&&projection.distanceM<=200?projection.fraction:null;
  const live=data.driver_location&&now-new Date(data.driver_location.recorded_at).getTime()<30000;
@@ -38,11 +41,12 @@ function StopCard({data,request,now,onAction,busy,gpsReady}:{data:Room;request:J
  {['pending','accepted'].includes(request.status)&&request.stage!=='completed'&&!['finished','cancelled'].includes(data.status)&&<>
  {request.stage==='waiting'&&<p>Conductor al recojo: {minutes(eta?.pickupSeconds)} · Caminata al recojo: {minutes(walkPickup)}</p>}
  <p>Bajada sobre la ruta: {minutes(eta?.dropoffSeconds)}</p><p className="font-bold">Destino final del pasajero: {minutes(selectedEnd)}</p>
- <p className="text-xs text-text-secondary">Caminata desde la bajada: {minutes(walkEnd)}. El conductor sigue su ruta original.</p>
+ <p className="text-xs text-text-secondary">Caminata hasta el recojo: {pickupWalk?`${Math.ceil(pickupWalk.meters)} m`:'por confirmar'}. Desde la bajada al destino: {dropoffWalk?`${Math.ceil(dropoffWalk.meters)} m`:'por confirmar'} · {minutes(walkEnd)}. El conductor sigue su ruta original.</p>
  {!eta&&data.status==='ongoing'&&<p className="text-xs text-warning">Tiempo por confirmar: ubicación antigua, fuera de ruta o parada ya superada.</p>}
  <p className="text-xs">GPS del pasajero: {request.gps_ready?'activo':'esperando ubicación'}</p>
  </>}
- {data.is_driver&&data.status==='scheduled'&&request.status==='pending'&&<div className="flex gap-2"><Button disabled={busy||!gpsReady} onClick={()=>onAction(()=>respondToRequest(request.id,'accepted'))}>Aceptar</Button><Button variant="secondary" disabled={busy} onClick={()=>onAction(()=>respondToRequest(request.id,'rejected'))}>Rechazar</Button></div>}
+ {data.is_driver&&data.status==='scheduled'&&request.status==='pending'&&<div className="flex gap-2"><Button disabled={busy} onClick={()=>setPreview(true)}>Visualizar solicitud</Button><Button variant="secondary" disabled={busy} onClick={()=>onAction(()=>respondToRequest(request.id,'rejected'))}>Rechazar</Button></div>}
+ {preview&&data.is_driver&&data.status==='scheduled'&&request.status==='pending'&&<JourneyPreview route={data.route} origin={request.origin} destination={request.destination} pickup={request.pickup} dropoff={request.dropoff} price={request.price} driver busy={busy} error={actionError} notice={!gpsReady?'Activa tu ubicación para aceptar al pasajero.':undefined} disabled={!gpsReady||new Date(data.departure_time).getTime()<=now} onClose={()=>setPreview(false)} onConfirm={()=>onAction(()=>respondToRequest(request.id,'accepted'))}/>}
  {data.is_driver&&data.status==='ongoing'&&request.status==='accepted'&&request.stage!=='completed'&&<Button disabled={busy||!gpsReady} onClick={()=>onAction(()=>stage(request.id,request.stage==='waiting'?'onboard':'completed'))}>{request.stage==='waiting'?'Confirmar recojo':'Confirmar bajada'}</Button>}
  {!data.is_driver&&['scheduled','ongoing'].includes(data.status)&&['pending','accepted'].includes(request.status)&&request.stage!=='completed'&&<Button variant="secondary" disabled={busy} onClick={()=>{if(window.confirm('¿Cancelar tu participación en este viaje? Se liberará tu asiento.'))onAction(()=>cancelJourney(data.trip_id,request.id));}}>Cancelar mi viaje</Button>}
  </Card>;
@@ -89,7 +93,7 @@ function RoomScreen({tripId}:{tripId:string}){
  {data.is_driver&&!isFinished&&<Button variant="danger" disabled={busy} onClick={()=>{if(window.confirm('¿Cancelar este viaje para todos los pasajeros?'))void action(()=>cancelJourney(tripId));}}>Cancelar viaje</Button>}
  {data.is_driver&&!isFinished&&<DriverAdvisor room={data} now={now}/>}
  {isFinished&&(data.is_driver||own?.status==='accepted')&&<JourneyHistoryPanel tripId={tripId}/>}
- {visibleRequests.map(r=><StopCard key={r.id} data={data} request={r} now={now} busy={busy} gpsReady={gps.ready} onAction={action}/>)}
+ {visibleRequests.map(r=><StopCard key={r.id} data={data} request={r} now={now} busy={busy} gpsReady={gps.ready} actionError={error} onAction={action}/>)}
  {isFinished&&<Link className="min-h-11 text-center font-bold text-accent-500" to={data.is_driver?'/conductor/mis-viajes':'/pasajero/mis-solicitudes'}>Ver resumen y calificar</Link>}
  {!data.is_driver&&own&&['rejected','cancelled'].includes(own.status)&&<Link className="min-h-11 text-center font-bold text-accent-500" to="/pasajero/buscar">Buscar otro viaje</Link>}
  </section></main>;
