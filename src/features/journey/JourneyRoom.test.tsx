@@ -83,3 +83,12 @@ it('elimina del mapa las paradas al cancelar la solicitud',async()=>{
  const data=structuredClone(snapshot);data.requests[0].status='cancelled';mocks.room.mockResolvedValue(data);
  await act(async()=>{await vi.advanceTimersByTimeAsync(3000);});expect(screen.queryByTitle('Bajada Ana')).toBeNull();expect(screen.queryByTitle('Recojo Ana')).toBeNull();
 });
+
+it('la prioridad reordena las tres tarjetas y se conserva al refrescar',async()=>{
+ const data=structuredClone(snapshot);data.is_driver=true;data.requests=[{...data.requests[0],id:'mid',name:'Medio',price:5,pickup_fraction:.3},{...data.requests[0],id:'low',name:'Bajo',price:2,pickup_fraction:.1},{...data.requests[0],id:'high',name:'Alto',price:9,pickup_fraction:.6}];mocks.room.mockResolvedValue(data);
+ show();await settle();const names=()=>screen.getAllByRole('region',{name:/Solicitud de/}).map(node=>node.getAttribute('aria-label'));
+ expect(names()).toEqual(['Solicitud de Alto','Solicitud de Medio','Solicitud de Bajo']);
+ fireEvent.change(screen.getByRole('combobox',{name:'Tu prioridad'}),{target:{value:'pickup'}});expect(names()).toEqual(['Solicitud de Bajo','Solicitud de Medio','Solicitud de Alto']);
+ await act(async()=>{await vi.advanceTimersByTimeAsync(3000);});expect(names()).toEqual(['Solicitud de Bajo','Solicitud de Medio','Solicitud de Alto']);
+ fireEvent.change(screen.getByRole('combobox',{name:'Tu prioridad'}),{target:{value:'contribution'}});expect(names()).toEqual(['Solicitud de Alto','Solicitud de Medio','Solicitud de Bajo']);expect(mocks.respond).not.toHaveBeenCalled();
+});

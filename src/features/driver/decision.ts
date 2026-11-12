@@ -1,6 +1,15 @@
-import type {JourneyRoom} from '../journey/types';
+import type {JourneyRoom,JourneyRequest} from '../journey/types';
 import {projectOnRoute} from '../journey/estimate';
 export type DriverGoal='contribution'|'pickup';
+/** Presentation order is independent of GPS eligibility and capacity. */
+export function compareDriverRequests(a:JourneyRequest,b:JourneyRequest,goal:DriverGoal){
+ const price=(b.price??-Infinity)-(a.price??-Infinity);
+ const pickup=(a.pickup_fraction??Infinity)-(b.pickup_fraction??Infinity);
+ return (goal==='contribution'?price||pickup:pickup||price)||a.id.localeCompare(b.id);
+}
+export function orderDriverRequests(rows:JourneyRequest[],goal:DriverGoal){
+ return [...rows.filter(r=>r.status==='pending').sort((a,b)=>compareDriverRequests(a,b,goal)),...rows.filter(r=>r.status!=='pending')];
+}
 /** Explainable driver rules, deliberately independent of passenger AHP/Fuzzy.
  * Reservations last the whole trip; no seat resale or route alteration. */
 export function adviseDriver(room:JourneyRoom,goal:DriverGoal,maxStopMinutes:number,now:number){
@@ -25,7 +34,7 @@ export function adviseDriver(room:JourneyRoom,goal:DriverGoal,maxStopMinutes:num
  const allowed=Math.min(capacity,Math.max(0,Math.floor(maxStopMinutes)));
  const chosen=eligible.slice(0,allowed);
  const selected=new Set(chosen.map(row=>row.request.id));
- return {rows:rows.map(row=>({...row,suggested:selected.has(row.request.id),reason:row.reason??(selected.has(row.request.id)?'Compatible con los asientos y el presupuesto de paradas.':'No entra en el grupo sugerido con tus límites actuales.')})),
+ return {rows:[...rows].sort((a,b)=>compareDriverRequests(a.request,b.request,goal)).map(row=>({...row,suggested:selected.has(row.request.id),reason:row.reason??(selected.has(row.request.id)?'Compatible con los asientos y el presupuesto de paradas.':'No entra en el grupo sugerido con tus límites actuales.')})),
   ids:chosen.map(row=>row.request.id),contribution:chosen.reduce((sum,row)=>sum+row.request.price!,0),extraStopSeconds:chosen.length*60,
   note:'Sugerencia por reglas: no acepta automáticamente ni modifica la ruta. El servidor vuelve a comprobar GPS y asientos.'};
 }

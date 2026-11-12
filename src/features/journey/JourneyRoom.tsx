@@ -11,6 +11,7 @@ import {room,stage,cancelJourney} from './api';
 import {finishTrip,respondToRequest,startTrip} from '../trips/api';
 import {useJourneyGps} from './useJourneyGps';
 import {estimateArrival,minutes,projectOnRoute,soles} from './estimate';
+import {orderDriverRequests,type DriverGoal} from '../driver/decision';
 import {DriverAdvisor} from '../driver/DriverAdvisor';
 import {JourneyHistoryPanel} from '../history/JourneyHistoryPanel';
 import {useWalkingRoute} from './useWalking';
@@ -36,7 +37,7 @@ function StopCard({data,request,now,onAction,busy,gpsReady,actionError}:{data:Ro
 
  const eta=request.pickup_fraction!==null&&request.dropoff_fraction!==null?estimateArrival({durationSeconds:data.route_duration_seconds,departureTime:data.departure_time,ongoing:data.status==='ongoing',progress:live?progress:null,pickup:request.pickup_fraction,dropoff:request.dropoff_fraction,walkToPickup:walkPickup,walkFromDropoff:walkEnd,now,pickupStopSeconds:request.pickup_stop_seconds,dropoffStopSeconds:request.dropoff_stop_seconds,onboard:request.stage==='onboard'}):null;
  const selectedEnd=eta?.finalSeconds;
- return <Card className="flex flex-col gap-2">
+ return <Card role="region" aria-label={`Solicitud de ${request.name}`} className="flex flex-col gap-2">
  <div className="flex justify-between gap-2"><strong>{data.is_driver?request.name:'Tu asiento'}</strong><strong>Aporte: {soles(request.price)}</strong></div>
  <p className="text-sm">{request.closure_reason==='departed'?'El viaje ya salió. Tu solicitud no fue aceptada a tiempo.':request.status==='pending'?'Esperando aceptación':request.status==='rejected'?'Solicitud rechazada':request.status==='cancelled'?'Solicitud cancelada':request.stage==='completed'?'Pasajero en su bajada':request.stage==='onboard'?'Pasajero a bordo':'Asiento confirmado'}</p>
  {['pending','accepted'].includes(request.status)&&request.stage!=='completed'&&!['finished','cancelled'].includes(data.status)&&<>
@@ -53,6 +54,7 @@ function StopCard({data,request,now,onAction,busy,gpsReady,actionError}:{data:Ro
  </Card>;
 }
 function RoomScreen({tripId}:{tripId:string}){
+ const [goal,setGoal]=useState<DriverGoal>('contribution');
  const {profile}=useAuth();const [data,setData]=useState<Room|null>(null),[error,setError]=useState<string|null>(null),[busy,setBusy]=useState(false),[now,setNow]=useState(()=>Date.now());
  const own=data?latestOwnRequest(data.requests,profile?.id):undefined;
  const active=!!data&&['scheduled','ongoing'].includes(data.status)&&(data.is_driver||!!own&&['pending','accepted'].includes(own.status)&&own.stage!=='completed');
@@ -69,7 +71,7 @@ function RoomScreen({tripId}:{tripId:string}){
  if(!data)return <main className="vamo-page"><p role="status">{error??'Abriendo tu viaje…'}</p><Link to="/">Volver al inicio</Link></main>;
  const confirmed=data.requests.filter(r=>r.status==='accepted'&&r.stage!=='completed');
  const participantsReady=confirmed.every(r=>r.gps_ready);
- const visibleRequests=data.is_driver?data.requests.filter(r=>['pending','accepted'].includes(r.status)&&r.stage!=='completed'):own?[own]:[];
+ const visibleRequests=data.is_driver?orderDriverRequests(data.requests.filter(r=>['pending','accepted'].includes(r.status)&&r.stage!=='completed'),goal):own?[own]:[];
  const isFinished=['finished','cancelled'].includes(data.status);
  return <main className="flex min-h-dvh flex-col bg-bg-page pb-6">
  <header className="safe-x mx-auto flex w-full max-w-3xl items-center justify-between gap-3 py-4 text-text-on-dark"><div><p className="text-xs text-accent-500">Vamo · tu viaje</p><h1 className="text-lg font-extrabold">{data.is_driver?'Tu ruta compartida':`Vamos con ${data.driver_name}`}</h1><p className="text-xs">{data.avenida}</p></div><Link to="/" className="text-sm">Inicio</Link></header>
@@ -92,7 +94,7 @@ function RoomScreen({tripId}:{tripId:string}){
  {data.is_driver&&data.status==='scheduled'&&<><p className="text-sm text-text-on-dark-muted">{participantsReady?'Pasajeros confirmados con GPS activo.':'Esperando GPS de todos los pasajeros confirmados.'}</p><Button loading={busy} disabled={busy||!gps.ready||!participantsReady} onClick={()=>action(async()=>{await startTrip(tripId);})}>Iniciar viaje</Button></>}
  {data.is_driver&&data.status==='ongoing'&&<Button variant="secondary" disabled={busy} onClick={()=>action(()=>finishTrip(tripId))}>Finalizar viaje</Button>}
  {data.is_driver&&!isFinished&&<Button variant="danger" disabled={busy} onClick={()=>{if(window.confirm('¿Cancelar este viaje para todos los pasajeros?'))void action(()=>cancelJourney(tripId));}}>Cancelar viaje</Button>}
- {data.is_driver&&!isFinished&&<DriverAdvisor room={data} now={now}/>}
+ {data.is_driver&&!isFinished&&<DriverAdvisor room={data} now={now} goal={goal} onGoalChange={setGoal}/>}
  {isFinished&&(data.is_driver||own?.status==='accepted')&&<JourneyHistoryPanel tripId={tripId}/>}
  {visibleRequests.map(r=><StopCard key={r.id} data={data} request={r} now={now} busy={busy} gpsReady={gps.ready} actionError={error} onAction={action}/>)}
  {isFinished&&<Link className="min-h-11 text-center font-bold text-accent-500" to={data.is_driver?'/conductor/mis-viajes':'/pasajero/mis-solicitudes'}>Ver resumen y calificar</Link>}
