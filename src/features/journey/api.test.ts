@@ -1,7 +1,7 @@
 import {afterEach,describe,expect,it,vi} from 'vitest';
 const mocks=vi.hoisted(()=>({rpc:vi.fn()}));
 vi.mock('../../lib/supabase',()=>({supabase:{rpc:mocks.rpc}}));
-import {request} from './api';
+import {request,options} from './api';
 import type {JourneyOption} from './types';
 const option={trip_id:'trip',price:4.25} as JourneyOption;
 const origin={lat:-12.1,lng:-77.03},destination={lat:-12.08,lng:-77.02};
@@ -23,4 +23,14 @@ describe('solicitud con GPS y aporte acordado',()=>{
   const pending=expect(request(option,origin,destination)).rejects.toThrow('reciente');
   await vi.advanceTimersByTimeAsync(20000);await pending;expect(mocks.rpc).not.toHaveBeenCalled();
  });
+});
+
+it('envía el radio personalizado al servidor al comparar',async()=>{
+ mocks.rpc.mockResolvedValue({data:[],error:null});await options(origin,destination,500);
+ expect(mocks.rpc).toHaveBeenCalledWith('journey_options',expect.objectContaining({p_max_distance_m:500}));
+});
+it('conserva el radio personalizado al solicitar el asiento',async()=>{
+ vi.stubGlobal('navigator',{geolocation:{clearWatch:vi.fn(),watchPosition:(ok:(value:unknown)=>void)=>ok({coords:{latitude:-12.1,longitude:-77.03,accuracy:15},timestamp:Date.now()})}});
+ mocks.rpc.mockResolvedValue({data:'id',error:null});await request(option,origin,destination,750);
+ expect(mocks.rpc).toHaveBeenCalledWith('request_journey',expect.objectContaining({p_max_distance_m:750,p_expected_price:4.25}));
 });

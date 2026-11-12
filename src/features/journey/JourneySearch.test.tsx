@@ -4,7 +4,7 @@ import {afterEach,it,expect,vi} from 'vitest';
 import type {JourneyOption} from './types';
 const mock=vi.hoisted(()=>({options:vi.fn(),request:vi.fn()}));
 vi.mock('./api',()=>mock);
-vi.mock('./useWalking',()=>({useWalking:()=>30}));
+vi.mock('./useWalking',()=>({useWalkingRoute:()=>({seconds:30,meters:240})}));
 vi.mock('../../components/LocationSearch',()=>({FitJourney:()=>null,LocationSearch:({label,onSelect}:{label:string;onSelect:(p:{lat:number;lng:number})=>void})=><button onClick={()=>onSelect({lat:-12.1,lng:-77.01})}>{label}</button>}));
 vi.mock('@vis.gl/react-google-maps',()=>({APIProvider:({children}:{children:React.ReactNode})=><>{children}</>,Map:({children}:{children:React.ReactNode})=><div>{children}</div>,AdvancedMarker:()=>null,Polyline:()=>null}));
 import {JourneySearch} from './JourneySearch';
@@ -17,6 +17,7 @@ it('integra AHP/Fuzzy con las opciones nuevas sin pedir una reserva automáticam
  await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'Comparar viajes'}));});
  expect(screen.getByText(/#1 para ti/)).toBeTruthy();
  const cards=screen.getAllByRole('button',{name:'Elegir y solicitar asiento'});expect(cards).toHaveLength(2);
+ expect(screen.getAllByText(/Caminarás 240 m hasta el recojo/)).toHaveLength(2);
  expect(screen.getByText('Aporte: S/ 2.00')).toBeTruthy();
  const text=document.body.textContent!;expect(text.indexOf('Menor aporte · Ruta')).toBeLessThan(text.indexOf('Mayor aporte · Ruta'));
  expect(mock.request).not.toHaveBeenCalled();
@@ -49,4 +50,12 @@ it('distingue un fallo de consulta de una ruta sin viajes',async()=>{
  mock.options.mockResolvedValueOnce([]);
  await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'Comparar viajes'}));});
  expect(screen.queryByRole('alert')).toBeNull();expect(screen.getByText('Aún no hay viajes para esta ruta')).toBeTruthy();
+});
+
+it('envía la distancia elegida y limpia resultados al cambiarla',async()=>{
+ mock.options.mockResolvedValue([]);prepareSearch();await act(async()=>{await Promise.resolve();});
+ fireEvent.change(screen.getByRole('combobox',{name:'Distancia máxima a la ruta'}),{target:{value:'500'}});
+ expect(screen.queryByText('Aún no hay viajes para esta ruta')).toBeNull();
+ await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'Comparar viajes'}));});
+ expect(mock.options).toHaveBeenLastCalledWith(expect.anything(),expect.anything(),500);
 });

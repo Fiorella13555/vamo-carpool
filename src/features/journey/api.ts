@@ -5,13 +5,13 @@ import {requireGps} from './gps';
 import type {GpsReading} from './gps';
 export {requireGps} from './gps';
 export type {GpsReading} from './gps';
-export async function options(origin:LatLng,destination:LatLng):Promise<JourneyOption[]>{
- const {data,error}=await supabase.rpc('journey_options',{p_origin_lat:origin.lat,p_origin_lng:origin.lng,p_dest_lat:destination.lat,p_dest_lng:destination.lng});
+export async function options(origin:LatLng,destination:LatLng,maxDistance=150):Promise<JourneyOption[]>{
+ const {data,error}=await supabase.rpc('journey_options',{p_origin_lat:origin.lat,p_origin_lng:origin.lng,p_dest_lat:destination.lat,p_dest_lng:destination.lng,...(maxDistance===150?{}:{p_max_distance_m:maxDistance})});
  if(error)throw error;return data??[];
 }
-export async function request(option:JourneyOption,origin:LatLng,destination:LatLng){
+export async function request(option:JourneyOption,origin:LatLng,destination:LatLng,maxDistance=150){
  const gps=await requireGps();
- const {error}=await supabase.rpc('request_journey',{p_trip_id:option.trip_id,p_origin_lat:origin.lat,p_origin_lng:origin.lng,p_dest_lat:destination.lat,p_dest_lng:destination.lng,p_gps_lat:gps.lat,p_gps_lng:gps.lng,p_accuracy:gps.accuracyM,p_recorded_at:gps.recordedAt,p_expected_price:option.price});
+ const {error}=await supabase.rpc('request_journey',{p_trip_id:option.trip_id,p_origin_lat:origin.lat,p_origin_lng:origin.lng,p_dest_lat:destination.lat,p_dest_lng:destination.lng,p_gps_lat:gps.lat,p_gps_lng:gps.lng,p_accuracy:gps.accuracyM,p_recorded_at:gps.recordedAt,p_expected_price:option.price,...(maxDistance===150?{}:{p_max_distance_m:maxDistance})});
  if(error)throw error;
 }
 export async function room(id:string):Promise<JourneyRoom>{const {data,error}=await supabase.rpc('journey_room',{p_trip_id:id});if(error)throw error;return data;}
