@@ -10,9 +10,11 @@ export function useWakeLock(active: boolean) {
   useEffect(() => {
     if (!active || !("wakeLock" in navigator)) return;
 
-    let released = false;
+    let released = false, acquiring = false;
 
     async function acquire() {
+      if (released || acquiring || document.visibilityState === "hidden" || (lockRef.current && !lockRef.current.released)) return;
+      acquiring = true;
       try {
         const lock = await navigator.wakeLock.request("screen");
         if (released) {
@@ -20,9 +22,14 @@ export function useWakeLock(active: boolean) {
           return;
         }
         lockRef.current = lock;
+        lock.addEventListener("release", () => {
+          if (lockRef.current === lock) lockRef.current = null;
+        }, { once: true });
       } catch {
         // El usuario puede negar el permiso o el navegador no soportarlo en
         // este contexto (ej. pestaña en segundo plano); no es un error fatal.
+      } finally {
+        acquiring = false;
       }
     }
 
@@ -30,7 +37,7 @@ export function useWakeLock(active: boolean) {
     // hay que volver a pedirlo al regresar (ej. el usuario revisa otra app
     // un momento y vuelve a Safari).
     function handleVisibilityChange() {
-      if (document.visibilityState === "visible" && !lockRef.current) {
+      if (document.visibilityState === "visible") {
         acquire();
       }
     }
