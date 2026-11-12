@@ -14,6 +14,7 @@ import {estimateArrival,minutes,projectOnRoute,soles} from './estimate';
 import {DriverAdvisor} from '../driver/DriverAdvisor';
 import {JourneyHistoryPanel} from '../history/JourneyHistoryPanel';
 import {useWalkingRoute} from './useWalking';
+import {latestOwnRequest,activeStops} from './participants';
 import {JourneyPreview} from './JourneyPreview';
 
 function MovingCar({position}:{position:Position}){
@@ -53,7 +54,7 @@ function StopCard({data,request,now,onAction,busy,gpsReady,actionError}:{data:Ro
 }
 function RoomScreen({tripId}:{tripId:string}){
  const {profile}=useAuth();const [data,setData]=useState<Room|null>(null),[error,setError]=useState<string|null>(null),[busy,setBusy]=useState(false),[now,setNow]=useState(()=>Date.now());
- const own=data?.requests.find(r=>r.passenger_id===profile?.id);
+ const own=data?latestOwnRequest(data.requests,profile?.id):undefined;
  const active=!!data&&['scheduled','ongoing'].includes(data.status)&&(data.is_driver||!!own&&['pending','accepted'].includes(own.status)&&own.stage!=='completed');
  const gps=useJourneyGps(tripId,active);
  const refreshRef=useRef<()=>Promise<void>>(async()=>{});
@@ -68,7 +69,7 @@ function RoomScreen({tripId}:{tripId:string}){
  if(!data)return <main className="vamo-page"><p role="status">{error??'Abriendo tu viaje…'}</p><Link to="/">Volver al inicio</Link></main>;
  const confirmed=data.requests.filter(r=>r.status==='accepted'&&r.stage!=='completed');
  const participantsReady=confirmed.every(r=>r.gps_ready);
- const visibleRequests=data.requests.filter(r=>r.status==='accepted'||!data.is_driver||r.status==='pending');
+ const visibleRequests=data.is_driver?data.requests.filter(r=>['pending','accepted'].includes(r.status)&&r.stage!=='completed'):own?[own]:[];
  const isFinished=['finished','cancelled'].includes(data.status);
  return <main className="flex min-h-dvh flex-col bg-bg-page pb-6">
  <header className="safe-x mx-auto flex w-full max-w-3xl items-center justify-between gap-3 py-4 text-text-on-dark"><div><p className="text-xs text-accent-500">Vamo · tu viaje</p><h1 className="text-lg font-extrabold">{data.is_driver?'Tu ruta compartida':`Vamos con ${data.driver_name}`}</h1><p className="text-xs">{data.avenida}</p></div><Link to="/" className="text-sm">Inicio</Link></header>
@@ -76,7 +77,7 @@ function RoomScreen({tripId}:{tripId:string}){
  <FitJourney origin={data.route[0]??null} destination={data.route[data.route.length-1]??null} route={data.route} overlay={false}/>
  <Polyline path={data.route} strokeColor="#0B2345" strokeWeight={5}/>
  {!isFinished&&data.driver_location&&<MovingCar position={data.driver_location}/>}
- {!isFinished&&visibleRequests.filter(r=>r.status==='accepted'||!data.is_driver).map((r,i)=><div key={r.id}>
+ {!isFinished&&activeStops(visibleRequests,data.is_driver).map((r,i)=><div key={r.id}>
  {r.pickup&&r.stage==='waiting'&&<AdvancedMarker position={r.pickup} title={`Recojo ${r.name}`}><span className="rounded-full border-2 border-white bg-accent-500 px-2 py-1 text-xs font-bold text-navy-900">{i+1} · Recojo</span></AdvancedMarker>}
  {r.dropoff&&r.stage!=='completed'&&<AdvancedMarker position={r.dropoff} title={`Bajada ${r.name}`}><span className="rounded-full border-2 border-white bg-navy-900 px-2 py-1 text-xs text-white">{i+1} · Bajada</span></AdvancedMarker>}
  {r.location&&r.stage==='waiting'&&<AdvancedMarker position={r.location} title={`${r.name} · ubicación actual`}><span className="rounded-full border-2 border-white bg-white p-1 text-navy-900"><MapPin size={22}/>{r.name}</span></AdvancedMarker>}

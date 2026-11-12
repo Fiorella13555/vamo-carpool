@@ -1,5 +1,5 @@
 import {useCallback,useEffect,useRef,useState} from 'react';
-import {APIProvider,Map,AdvancedMarker,Polyline} from '@vis.gl/react-google-maps';
+import {APIProvider,Map,AdvancedMarker} from '@vis.gl/react-google-maps';
 import {useNavigate} from 'react-router-dom';
 import {LocationSearch,FitJourney} from '../../components/LocationSearch';
 import {BottomSheet,Button,Card} from '../../components/ui';
@@ -42,7 +42,7 @@ function Search(){
  useEffect(()=>{const timer=setInterval(()=>setClock(Date.now()),1000);return()=>clearInterval(timer);},[]);
  const [maxDistance,setMaxDistance]=useState(150);
  const [pick,setPick]=useState<'origin'|'destination'|null>(null),[results,setResults]=useState<JourneyOption[]|null>(null);
- const [selected,setSelected]=useState<JourneyOption|null>(null),[busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null);
+ const [busy,setBusy]=useState(false),[error,setError]=useState<string|null>(null);
  const [searching,setSearching]=useState(false),[completedSearch,setCompletedSearch]=useState(0);
  const feedback=useRef<HTMLDivElement>(null);
  useEffect(()=>{if(completedSearch){feedback.current?.focus({preventScroll:true});feedback.current?.scrollIntoView?.({block:'nearest',behavior:'smooth'});}},[completedSearch]);
@@ -58,16 +58,16 @@ function Search(){
   let alive=true;
   const token=version.current;
   const timer=setInterval(()=>{void options(origin,destination,maxDistance).then(rows=>{
-   if(alive&&version.current===token){setResults(rows);setSelected(previous=>previous?rows.find(row=>row.trip_id===previous.trip_id)??null:null);}
+   if(alive&&version.current===token){setResults(rows);}
   }).catch(()=>{if(alive&&version.current===token)setError('No pudimos actualizar las opciones. Vuelve a comparar antes de solicitar.');});},3000);
   return()=>{alive=false;clearInterval(timer);};
  },[hasResults,origin,destination,busy,maxDistance]);
- const reset=()=>{version.current++;setResults(null);setMetrics({});setSelected(null);setError(null);setBusy(false);setSearching(false);};
+ const reset=()=>{version.current++;setResults(null);setMetrics({});setError(null);setBusy(false);setSearching(false);};
  function choose(point:LatLng,target:'origin'|'destination'){if(!isInLima(point)){setError('Elige un punto dentro de Lima Metropolitana.');return;}reset();if(target==='origin')setOrigin(point);else setDestination(point);setPick(null);}
  async function search(){
   if(!origin||!destination)return;
   if(!Number.isFinite(new Date(desiredTime).getTime())||new Date(desiredTime).getTime()<Date.now()){setError('Elige una fecha y hora futura para el recojo.');return;}
-  const token=++version.current;setBusy(true);setSearching(true);setResults(null);setMetrics({});setSelected(null);setError(null);
+  const token=++version.current;setBusy(true);setSearching(true);setResults(null);setMetrics({});setError(null);
   try{const rows=await options(origin,destination,maxDistance);if(token===version.current)setResults(rows);}
   catch(e){if(token===version.current)setError(e instanceof Error?`No pudimos consultar los viajes. ${e.message}`:'No pudimos consultar los viajes. Intenta comparar nuevamente.');}
   finally{if(token===version.current){setBusy(false);setSearching(false);setCompletedSearch(value=>value+1);}}
@@ -75,7 +75,7 @@ function Search(){
  async function select(option:JourneyOption){if(!origin||!destination)return;setBusy(true);setError(null);try{await request(option,origin,destination,maxDistance);navigate(`/viaje/${option.trip_id}`);}catch(e){setError(e instanceof Error?e.message:'No pudimos solicitar el asiento.');if(e instanceof Error&&/ya salió|ya no está disponible|cerró sus solicitudes/i.test(e.message))setResults(previous=>previous?.filter(row=>row.trip_id!==option.trip_id)??null);}finally{setBusy(false);}}
  return <main className="relative h-[calc(100dvh-60px)] overflow-hidden"><Map defaultCenter={{lat:-12.09,lng:-77.02}} defaultZoom={12} mapId={import.meta.env.VITE_GOOGLE_MAPS_MAP_ID||'DEMO_MAP_ID'} disableDefaultUI className="h-full w-full" onClick={e=>{if(pick&&e.detail.latLng)choose(e.detail.latLng,pick);}}>
  <FitJourney origin={origin} destination={destination}/>{origin&&<AdvancedMarker position={origin} title="Tu inicio"/>}{destination&&<AdvancedMarker position={destination} title="Tu destino final"/>}
- {selected&&<><Polyline path={selected.route} strokeColor="#0B2345" strokeWeight={5}/><AdvancedMarker position={selected.pickup} title="Recojo sobre la ruta"/><AdvancedMarker position={selected.dropoff} title="Bajada sobre la ruta"/></>}
+
  </Map><BottomSheet className={`flex flex-col gap-3 px-4 pb-4 ${pick?'!max-h-[24dvh]':''}`}>
  <h1 className="text-xl font-extrabold">¿A dónde vamos?</h1><p className="text-xs text-text-secondary">Compara rutas cercanas a tu inicio y destino. Para solicitar y viajar debes activar tu ubicación.</p>
  {pick&&<p role="status">Toca el mapa para elegir {pick==='origin'?'tu inicio':'tu destino'}. <button onClick={()=>setPick(null)}>Cancelar</button></p>}
@@ -99,7 +99,7 @@ function Search(){
  {!searching&&!error&&!!ordered?.length&&<p role="status" className="rounded-lg bg-bg-sunken p-4 text-sm font-bold">{ordered!.length===1?'Encontramos 1 viaje para ti':`Encontramos ${ordered!.length} viajes para ti`}</p>}
  </div>
  <PassengerPreferences matrix={matrix} onChange={setMatrix}/>
- {origin&&destination&&ordered?.map(option=><section key={option.trip_id} onMouseEnter={()=>setSelected(option)} onFocus={()=>setSelected(option)}>{positions.has(option.trip_id)&&<p className="rounded-lg bg-bg-sunken p-3 text-sm text-navy-900"><strong>Afinidad contigo · compatibilidad {(positions.get(option.trip_id)!.score*100).toFixed(0)}/100</strong><br/>{positions.get(option.trip_id)!.explanation}</p>}<Option error={error} onMetrics={onMetrics} option={option} origin={origin} destination={destination} busy={busy} onSelect={()=>select(option)}/></section>)}
+ {origin&&destination&&ordered?.map(option=><section key={option.trip_id}>{positions.has(option.trip_id)&&<p className="rounded-lg bg-bg-sunken p-3 text-sm text-navy-900"><strong>Afinidad contigo · compatibilidad {(positions.get(option.trip_id)!.score*100).toFixed(0)}/100</strong><br/>{positions.get(option.trip_id)!.explanation}</p>}<Option error={error} onMetrics={onMetrics} option={option} origin={origin} destination={destination} busy={busy} onSelect={()=>select(option)}/></section>)}
  <p className="text-xs text-text-secondary">Tiempos aproximados: duración publicada distribuida sobre la ruta original y caminatas consultadas en Maps. No incluyen tráfico actualizado ni detenciones imprevistas. El inicio nunca se retrasa automáticamente para esperarte.</p>
  </BottomSheet></main>;
 }

@@ -11,7 +11,7 @@ vi.mock('../../components/LocationSearch',()=>({FitJourney:()=>null}));
 vi.mock('../history/JourneyHistoryPanel',()=>({JourneyHistoryPanel:()=>null}));
 vi.mock('../../lib/supabase',()=>({supabase:{}}));
 vi.mock('../trips/api',()=>({finishTrip:vi.fn(),respondToRequest:mocks.respond,startTrip:vi.fn()}));
-vi.mock('@vis.gl/react-google-maps',()=>({APIProvider:({children}:{children:React.ReactNode})=><>{children}</>,Map:({children}:{children:React.ReactNode})=><div>{children}</div>,AdvancedMarker:({children}:{children:React.ReactNode})=><div>{children}</div>,Polyline:()=>null}));
+vi.mock('@vis.gl/react-google-maps',()=>({APIProvider:({children}:{children:React.ReactNode})=><>{children}</>,Map:({children}:{children:React.ReactNode})=><div>{children}</div>,AdvancedMarker:({children,title}:{children:React.ReactNode;title:string})=><div title={title}>{children}</div>,Polyline:()=>null}));
 import {JourneyRoomPage} from './JourneyRoom';
 const snapshot:JourneyRoom={trip_id:'trip',driver_id:'driver',driver_name:'Valeria',is_driver:false,status:'scheduled',avenida:'Javier Prado',departure_time:'2026-12-01T12:00:00Z',route_duration_seconds:1200,seat_price:6,route:[{lat:-12.1,lng:-77.03},{lat:-12.08,lng:-77.02}],driver_location:null,requests:[{id:'req',passenger_id:'passenger',name:'Ana',status:'pending',stage:'waiting',price:3,pickup_fraction:.2,dropoff_fraction:.7,pickup:{lat:-12.095,lng:-77.0275},dropoff:{lat:-12.085,lng:-77.0225},origin:{lat:-12.095,lng:-77.0275},destination:{lat:-12.085,lng:-77.0225},gps_ready:true,location:null,pickup_stop_seconds:0,dropoff_stop_seconds:0}]};
 function show(){return render(<MemoryRouter initialEntries={['/viaje/trip']}><Routes><Route path="/viaje/:tripId" element={<JourneyRoomPage/>}/></Routes></MemoryRouter>);}
@@ -72,4 +72,14 @@ it('revisa paradas y caminatas antes de aceptar al pasajero',async()=>{
  fireEvent.click(screen.getByRole('button',{name:'Visualizar solicitud'}));expect(screen.getByRole('dialog',{name:'Visualizar solicitud'})).toBeTruthy();
  expect(screen.getByText('1 · Hasta el punto de recojo')).toBeTruthy();expect(screen.getByText('2 · Desde la bajada hasta el destino')).toBeTruthy();expect(mocks.respond).not.toHaveBeenCalled();
  await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'Aceptar pasajero'}));});expect(mocks.respond).toHaveBeenCalledWith('req','accepted');
+});
+
+it('al volver a pedir un viaje usa la solicitud nueva y no deja paradas canceladas',async()=>{
+ const data=structuredClone(snapshot),old={...data.requests[0],id:'old',name:'Anterior',status:'cancelled' as const};data.requests=[old,...data.requests];mocks.room.mockResolvedValue(data);
+ show();await settle();expect(screen.queryByTitle('Bajada Anterior')).toBeNull();expect(screen.getByTitle('Bajada Ana')).toBeTruthy();expect(screen.getByRole('status').textContent).toContain('esperando al conductor');
+});
+it('elimina del mapa las paradas al cancelar la solicitud',async()=>{
+ show();await settle();expect(screen.getByTitle('Bajada Ana')).toBeTruthy();
+ const data=structuredClone(snapshot);data.requests[0].status='cancelled';mocks.room.mockResolvedValue(data);
+ await act(async()=>{await vi.advanceTimersByTimeAsync(3000);});expect(screen.queryByTitle('Bajada Ana')).toBeNull();expect(screen.queryByTitle('Recojo Ana')).toBeNull();
 });
