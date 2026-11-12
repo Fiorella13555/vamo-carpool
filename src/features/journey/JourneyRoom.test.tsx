@@ -6,6 +6,7 @@ const mocks=vi.hoisted(()=>({room:vi.fn(),cancel:vi.fn(),respond:vi.fn(),ready:t
 vi.mock('../auth/AuthContext',()=>({useAuth:()=>({profile:{id:'passenger'}})}));
 vi.mock('./api',()=>({room:mocks.room,stage:vi.fn(),cancelJourney:mocks.cancel}));
 vi.mock('./useJourneyGps',()=>({useJourneyGps:()=>({ready:mocks.ready,reading:null,error:null,retry:vi.fn()})}));
+vi.mock('./DriverNavigation',()=>({DriverNavigation:()=> <p>Vista de conducción</p>}));
 vi.mock('./useWalking',()=>({useWalkingRoute:()=>({seconds:60,meters:120})}));
 vi.mock('../../components/LocationSearch',()=>({FitJourney:()=>null}));
 vi.mock('../ratings/TripRatings',()=>({TripRatings:()=> <p>Calificaciones del viaje</p>}));
@@ -97,4 +98,10 @@ it('la prioridad reordena las tres tarjetas y se conserva al refrescar',async()=
 it('ofrece las calificaciones al finalizar aun sin bajadas registradas',async()=>{
  const data=structuredClone(snapshot);data.is_driver=true;data.status='finished';data.requests[0].status='accepted';mocks.room.mockResolvedValue(data);
  show();await settle();expect(screen.getByText('Calificaciones del viaje')).toBeTruthy();
+});
+
+it('activa la vista de conducción solo al iniciar como conductor',async()=>{
+ const data=structuredClone(snapshot);data.is_driver=true;mocks.room.mockResolvedValue(data);show();await settle();expect(screen.queryByText('Vista de conducción')).toBeNull();
+ data.status='ongoing';mocks.room.mockResolvedValue({...data});await act(async()=>{await vi.advanceTimersByTimeAsync(3000);});expect(screen.getByText('Vista de conducción')).toBeTruthy();
+ data.status='finished';mocks.room.mockResolvedValue({...data});await act(async()=>{await vi.advanceTimersByTimeAsync(3000);});expect(screen.queryByText('Vista de conducción')).toBeNull();
 });

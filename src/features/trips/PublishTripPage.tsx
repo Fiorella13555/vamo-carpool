@@ -13,6 +13,8 @@ import type { Vehicle } from "../../types/vehicle";
 import { isWatchlistClear } from "../../types/profile";
 import { Button, EmptyState, Input, StatusScreen } from "../../components/ui";
 
+import {extractNavigationSteps,type NavigationStep} from '../journey/navigation';
+
 const LIMA_CENTER = { lat: -12.09, lng: -77.02 };
 
 type PickMode = "origin" | "destination" | null;
@@ -23,6 +25,7 @@ function PublishTripForm() {
   const routesLibrary = useMapsLibrary("routes");
 
   const routeVersion = useRef(0);
+  const [navigationSteps,setNavigationSteps]=useState<NavigationStep[]>([]);
   const [vehicle, setVehicle] = useState<Vehicle | null | undefined>(undefined);
   const [origin, setOrigin] = useState<LatLng | null>(null);
   const [destination, setDestination] = useState<LatLng | null>(null);
@@ -68,14 +71,15 @@ function PublishTripForm() {
         origin,
         destination,
         travelMode: google.maps.TravelMode.DRIVING,
-        fields: ["path", "durationMillis"],
+        fields: ["path", "durationMillis", "legs"],
+        language: "es",
       });
       const path = result.routes?.[0]?.path?.map((p) => ({ lat: p.lat, lng: p.lng }));
       if (!path || path.length < 2) {
         setError("No se pudo calcular una ruta entre esos dos puntos.");
         return;
       }
-      if (version === routeVersion.current) {setRoute(path);setRouteSeconds((result.routes?.[0]?.durationMillis ?? 0)/1000 || null);}
+      if (version === routeVersion.current) {setNavigationSteps(extractNavigationSteps(result.routes?.[0]?.legs??[],path));setRoute(path);setRouteSeconds((result.routes?.[0]?.durationMillis ?? 0)/1000 || null);}
     } catch {
       setError("No se pudo calcular la ruta. Intenta con otros puntos.");
     } finally {
@@ -112,6 +116,7 @@ function PublishTripForm() {
     setSubmitting(true);
     try {
       const tripId = await createTrip({
+        navigationSteps,
         routeDurationSeconds:routeSeconds,
         driverId: profile.id,
         origin,

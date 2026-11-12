@@ -1,6 +1,6 @@
 import {useEffect,useRef,useState} from 'react';
 import {APIProvider,Map,AdvancedMarker,Polyline} from '@vis.gl/react-google-maps';
-import {Car,MapPin} from 'lucide-react';
+import {Car,MapPin,Navigation2} from 'lucide-react';
 import {Link,useParams} from 'react-router-dom';
 import {useAuth} from '../auth/AuthContext';
 import {Button,Card} from '../../components/ui';
@@ -19,14 +19,16 @@ import {useWalkingRoute} from './useWalking';
 import {latestOwnRequest,activeStops} from './participants';
 import {JourneyPreview} from './JourneyPreview';
 
-function MovingCar({position}:{position:Position}){
+import {DriverNavigation} from './DriverNavigation';
+
+function MovingCar({position,navigating=false}:{position:Position;navigating?:boolean}){
  const [shown,setShown]=useState<LatLng>(position);const last=useRef<LatLng>(position);
  useEffect(()=>{
   const from=last.current;const started=performance.now();let frame=0;
   const move=(now:number)=>{const p=Math.min(1,(now-started)/1200);const next={lat:from.lat+(position.lat-from.lat)*p,lng:from.lng+(position.lng-from.lng)*p};last.current=next;setShown(next);if(p<1)frame=requestAnimationFrame(move);};
   frame=requestAnimationFrame(move);return()=>cancelAnimationFrame(frame);
  },[position.lat,position.lng]);
- return <AdvancedMarker position={shown} title="Conductor en tiempo real"><div className="rounded-full border-2 border-white bg-navy-900 p-2 text-white shadow-lg"><Car size={25}/></div></AdvancedMarker>;
+ return <AdvancedMarker position={shown} title="Conductor en tiempo real"><div className="rounded-full border-2 border-white bg-navy-900 p-2 text-white shadow-lg">{navigating?<Navigation2 size={28} className="fill-accent-500 text-accent-500"/>:<Car size={25}/>}</div></AdvancedMarker>;
 }
 function StopCard({data,request,now,onAction,busy,gpsReady,actionError}:{data:Room;request:JourneyRequest;now:number;onAction:(action:()=>Promise<unknown>)=>void;busy:boolean;gpsReady:boolean;actionError:string|null}){
  const [preview,setPreview]=useState(false);
@@ -55,6 +57,7 @@ function StopCard({data,request,now,onAction,busy,gpsReady,actionError}:{data:Ro
  </Card>;
 }
 function RoomScreen({tripId}:{tripId:string}){
+ const [driverOverview,setDriverOverview]=useState(false);
  const [goal,setGoal]=useState<DriverGoal>('contribution');
  const {profile}=useAuth();const [data,setData]=useState<Room|null>(null),[error,setError]=useState<string|null>(null),[busy,setBusy]=useState(false),[now,setNow]=useState(()=>Date.now());
  const own=data?latestOwnRequest(data.requests,profile?.id):undefined;
@@ -74,12 +77,15 @@ function RoomScreen({tripId}:{tripId:string}){
  const participantsReady=confirmed.every(r=>r.gps_ready);
  const visibleRequests=data.is_driver?orderDriverRequests(data.requests.filter(r=>['pending','accepted'].includes(r.status)&&r.stage!=='completed'),goal):own?[own]:[];
  const isFinished=['finished','cancelled'].includes(data.status);
+ const driving=data.is_driver&&data.status==='ongoing';
+ const driverPosition=driving&&gps.reading?{lat:gps.reading.lat,lng:gps.reading.lng,recorded_at:gps.reading.recordedAt}:data.driver_location;
  return <main className="flex min-h-dvh flex-col bg-bg-page pb-6">
  <header className="safe-x mx-auto flex w-full max-w-3xl items-center justify-between gap-3 py-4 text-text-on-dark"><div><p className="text-xs text-accent-500">Vamo · tu viaje</p><h1 className="text-lg font-extrabold">{data.is_driver?'Tu ruta compartida':`Vamos con ${data.driver_name}`}</h1><p className="text-xs">{data.avenida}</p></div><Link to="/" className="text-sm">Inicio</Link></header>
- {!isFinished&&<div className="relative h-[43dvh] min-h-64"><Map className="h-full w-full" defaultCenter={data.route[0]??{lat:-12.09,lng:-77.02}} defaultZoom={13} mapId={import.meta.env.VITE_GOOGLE_MAPS_MAP_ID||'DEMO_MAP_ID'} disableDefaultUI>
- <FitJourney origin={data.route[0]??null} destination={data.route[data.route.length-1]??null} route={data.route} overlay={false}/>
+ {!isFinished&&<div className={driving?"relative h-[76dvh] min-h-[32rem]":"relative h-[43dvh] min-h-64"}><Map className="h-full w-full" defaultCenter={data.route[0]??{lat:-12.09,lng:-77.02}} defaultZoom={13} mapId={import.meta.env.VITE_GOOGLE_MAPS_MAP_ID||'DEMO_MAP_ID'} disableDefaultUI renderingType={driving?"VECTOR":undefined}>
+ {(!driving||driverOverview)&&<FitJourney origin={data.route[0]??null} destination={data.route[data.route.length-1]??null} route={data.route} overlay={false}/>}
  <Polyline path={data.route} strokeColor="#0B2345" strokeWeight={5}/>
- {!isFinished&&data.driver_location&&<MovingCar position={data.driver_location}/>}
+ {driverPosition&&<MovingCar position={driverPosition} navigating={driving}/>}
+ {driving&&<DriverNavigation data={data} position={driverPosition} now={now} overview={driverOverview} onOverview={setDriverOverview} busy={busy} gpsReady={gps.ready} onAction={(id,value)=>{void action(()=>stage(id,value));}}/>}
  {!isFinished&&activeStops(visibleRequests,data.is_driver).map((r,i)=><div key={r.id}>
  {r.pickup&&r.stage==='waiting'&&<AdvancedMarker position={r.pickup} title={`Recojo ${r.name}`}><span className="rounded-full border-2 border-white bg-accent-500 px-2 py-1 text-xs font-bold text-navy-900">{i+1} · Recojo</span></AdvancedMarker>}
  {r.dropoff&&r.stage!=='completed'&&<AdvancedMarker position={r.dropoff} title={`Bajada ${r.name}`}><span className="rounded-full border-2 border-white bg-navy-900 px-2 py-1 text-xs text-white">{i+1} · Bajada</span></AdvancedMarker>}

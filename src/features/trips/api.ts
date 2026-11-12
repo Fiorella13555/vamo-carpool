@@ -4,7 +4,10 @@ import type { LatLng } from "../../lib/geo";
 import type { PickupRequest, Trip } from "../../types/trip";
 import type { PublicProfile } from "../../types/profile";
 
+import type {NavigationStep} from '../journey/navigation';
+
 export interface CreateTripInput {
+  navigationSteps?: NavigationStep[];
   driverId: string;
   origin: LatLng;
   destination: LatLng;
@@ -17,6 +20,7 @@ export interface CreateTripInput {
 
 export async function createTrip(input: CreateTripInput) {
   const { data, error } = await supabase.from("trips").insert({
+    navigation_steps:input.navigationSteps??[],
     route_duration_seconds:input.routeDurationSeconds,
     driver_id: input.driverId,
     origin: pointToWkt(input.origin),
