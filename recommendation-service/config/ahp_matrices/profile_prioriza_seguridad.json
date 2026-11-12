@@ -1,0 +1,12 @@
+{
+  "name": "profile_prioriza_seguridad",
+  "description": "Perfil de pasajero: 'prioriza seguridad' -- seguridad percibida y calificación dominan.",
+  "criteria": ["tiempo_espera", "calificacion", "seguridad_percibida", "asientos_libres", "distancia"],
+  "matrix": [
+    [1, 0.3333, 0.2, 2, 0.5],
+    [3, 1, 0.5, 5, 2],
+    [5, 2, 1, 9, 3],
+    [0.5, 0.2, 0.1111, 1, 0.3333],
+    [2, 0.5, 0.3333, 3, 1]
+  ]
+}

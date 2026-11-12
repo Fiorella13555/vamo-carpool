@@ -1,0 +1,10 @@
+import {act,cleanup,render,screen} from '@testing-library/react';
+import {afterEach,it,expect,vi} from 'vitest';
+const mock=vi.hoisted(()=>({rpc:vi.fn()}));
+vi.mock('../../lib/supabase',()=>({supabase:{rpc:mock.rpc}}));
+vi.mock('../../components/LocationSearch',()=>({FitJourney:()=>null}));
+vi.mock('@vis.gl/react-google-maps',()=>({Map:({children}:{children:React.ReactNode})=><div>{children}</div>,AdvancedMarker:()=>null,Polyline:()=>null}));
+import {JourneyHistoryPanel} from './JourneyHistoryPanel';
+afterEach(()=>{cleanup();vi.restoreAllMocks();});
+it('muestra falta de muestras sin reconstruir el recorrido',async()=>{mock.rpc.mockResolvedValue({data:{trip_id:'t',is_driver:false,planned_route:[],track:[],events:[],requests:[]},error:null});render(<JourneyHistoryPanel tripId="t"/>);await act(async()=>{});expect(screen.getByText(/No hay muestras para este tramo/)).toBeTruthy();expect(mock.rpc).toHaveBeenCalledWith('journey_history',{p_trip_id:'t'});});
+it('comunica rechazo del backend sin exponer un historial',async()=>{mock.rpc.mockResolvedValue({data:null,error:{message:'No participas en este viaje'}});render(<JourneyHistoryPanel tripId="t"/>);await act(async()=>{});expect(screen.getByRole('alert').textContent).toContain('No participas');expect(screen.queryByText('Tu recorrido guardado')).toBeNull();});

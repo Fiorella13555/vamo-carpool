@@ -1,0 +1,1031 @@
+{
+  "metadata": {
+    "data_source": "synthetic",
+    "seed": 42,
+    "rows": 241920,
+    "data_sha256": "36b1d8cff0b4ead4cd29a6c4e7f9f7d5de81a6dc39c02184c679eed022d343f9",
+    "algorithm": "HistGradientBoostingRegressor",
+    "sklearn_version": "1.8.0",
+    "features": [
+      "route_code",
+      "weekday",
+      "hour"
+    ],
+    "targets": {
+      "demand": "Solicitudes por ruta y hora (no personas únicas)",
+      "traffic": "Minutos de viaje sintéticos"
+    },
+    "splits": {
+      "train": {
+        "start": "2026-05-07",
+        "end": "2026-09-09",
+        "rows": 169344
+      },
+      "validation": {
+        "start": "2026-09-10",
+        "end": "2026-10-06",
+        "rows": 36288
+      },
+      "test": {
+        "start": "2026-10-07",
+        "end": "2026-11-02",
+        "rows": 36288
+      }
+    },
+    "evaluation": {
+      "validation": {
+        "demand": {
+          "model": {
+            "mae": 0.6276,
+            "rmse": 0.9168,
+            "poisson_deviance": 0.8924
+          },
+          "seasonal_baseline": {
+            "mae": 0.6382,
+            "rmse": 0.9386,
+            "poisson_deviance": 1.0344
+          }
+        },
+        "traffic": {
+          "model": {
+            "mae": 1.3233,
+            "rmse": 1.8449
+          },
+          "seasonal_baseline": {
+            "mae": 1.3564,
+            "rmse": 1.8874
+          }
+        }
+      },
+      "test": {
+        "demand": {
+          "model": {
+            "mae": 0.6253,
+            "rmse": 0.9111,
+            "poisson_deviance": 0.8949
+          },
+          "seasonal_baseline": {
+            "mae": 0.6361,
+            "rmse": 0.9337,
+            "poisson_deviance": 1.0349
+          }
+        },
+        "traffic": {
+          "model": {
+            "mae": 1.3275,
+            "rmse": 1.8538
+          },
+          "seasonal_baseline": {
+            "mae": 1.3587,
+            "rmse": 1.8988
+          }
+        }
+      }
+    },
+    "limitations": "Métricas sobre datos sintéticos; no miden capacidad predictiva sobre tráfico o demanda reales.",
+    "forecast_start": "2026-11-03",
+    "forecast_end": "2026-11-16",
+    "timezone": "America/Lima",
+    "horizon_days": 14,
+    "districts": [
+      {
+        "id": "san_borja",
+        "name": "San Borja",
+        "lat": -12.1,
+        "lng": -77.008
+      },
+      {
+        "id": "surco",
+        "name": "Santiago de Surco",
+        "lat": -12.135,
+        "lng": -76.99
+      },
+      {
+        "id": "la_molina",
+        "name": "La Molina",
+        "lat": -12.08,
+        "lng": -76.945
+      },
+      {
+        "id": "san_isidro",
+        "name": "San Isidro",
+        "lat": -12.097,
+        "lng": -77.036
+      },
+      {
+        "id": "miraflores",
+        "name": "Miraflores",
+        "lat": -12.122,
+        "lng": -77.03
+      },
+      {
+        "id": "jesus_maria",
+        "name": "Jesús María",
+        "lat": -12.077,
+        "lng": -77.05
+      },
+      {
+        "id": "lince",
+        "name": "Lince",
+        "lat": -12.085,
+        "lng": -77.035
+      },
+      {
+        "id": "pueblo_libre",
+        "name": "Pueblo Libre",
+        "lat": -12.075,
+        "lng": -77.072
+      }
+    ]
+  },
+  "forecast": {
+    "data_source": "synthetic",
+    "day": "2026-11-03",
+    "timezone": "America/Lima",
+    "selected_hour": null,
+    "total_expected_requests": 1334.17,
+    "peak_demand_hour": 18,
+    "peak_traffic_hour": 18,
+    "hourly": [
+      {
+        "hour": 0,
+        "expected_requests": 4.54,
+        "traffic_factor": 1.16
+      },
+      {
+        "hour": 1,
+        "expected_requests": 4.44,
+        "traffic_factor": 1.16
+      },
+      {
+        "hour": 2,
+        "expected_requests": 4.57,
+        "traffic_factor": 1.16
+      },
+      {
+        "hour": 3,
+        "expected_requests": 4.81,
+        "traffic_factor": 1.16
+      },
+      {
+        "hour": 4,
+        "expected_requests": 8.19,
+        "traffic_factor": 1.18
+      },
+      {
+        "hour": 5,
+        "expected_requests": 21.24,
+        "traffic_factor": 1.26
+      },
+      {
+        "hour": 6,
+        "expected_requests": 52.83,
+        "traffic_factor": 1.5
+      },
+      {
+        "hour": 7,
+        "expected_requests": 100.65,
+        "traffic_factor": 1.83
+      },
+      {
+        "hour": 8,
+        "expected_requests": 128.41,
+        "traffic_factor": 2.0
+      },
+      {
+        "hour": 9,
+        "expected_requests": 109.26,
+        "traffic_factor": 1.83
+      },
+      {
+        "hour": 10,
+        "expected_requests": 68.83,
+        "traffic_factor": 1.5
+      },
+      {
+        "hour": 11,
+        "expected_requests": 46.23,
+        "traffic_factor": 1.27
+      },
+      {
+        "hour": 12,
+        "expected_requests": 44.08,
+        "traffic_factor": 1.19
+      },
+      {
+        "hour": 13,
+        "expected_requests": 44.74,
+        "traffic_factor": 1.19
+      },
+      {
+        "hour": 14,
+        "expected_requests": 49.14,
+        "traffic_factor": 1.24
+      },
+      {
+        "hour": 15,
+        "expected_requests": 60.97,
+        "traffic_factor": 1.42
+      },
+      {
+        "hour": 16,
+        "expected_requests": 89.87,
+        "traffic_factor": 1.72
+      },
+      {
+        "hour": 17,
+        "expected_requests": 118.95,
+        "traffic_factor": 2.05
+      },
+      {
+        "hour": 18,
+        "expected_requests": 132.63,
+        "traffic_factor": 2.2
+      },
+      {
+        "hour": 19,
+        "expected_requests": 109.62,
+        "traffic_factor": 2.05
+      },
+      {
+        "hour": 20,
+        "expected_requests": 71.64,
+        "traffic_factor": 1.72
+      },
+      {
+        "hour": 21,
+        "expected_requests": 35.74,
+        "traffic_factor": 1.42
+      },
+      {
+        "hour": 22,
+        "expected_requests": 15.32,
+        "traffic_factor": 1.24
+      },
+      {
+        "hour": 23,
+        "expected_requests": 7.48,
+        "traffic_factor": 1.18
+      }
+    ],
+    "routes": [
+      {
+        "origin": "san_isidro",
+        "destination": "surco",
+        "origin_name": "San Isidro",
+        "destination_name": "Santiago de Surco",
+        "expected_requests": 30.33,
+        "peak_hour": 18,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.2,
+        "travel_minutes": 38.9,
+        "congestion": "alto"
+      },
+      {
+        "origin": "jesus_maria",
+        "destination": "surco",
+        "origin_name": "Jesús María",
+        "destination_name": "Santiago de Surco",
+        "expected_requests": 28.84,
+        "peak_hour": 18,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.26,
+        "travel_minutes": 56.1,
+        "congestion": "alto"
+      },
+      {
+        "origin": "miraflores",
+        "destination": "surco",
+        "origin_name": "Miraflores",
+        "destination_name": "Santiago de Surco",
+        "expected_requests": 28.27,
+        "peak_hour": 18,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.12,
+        "travel_minutes": 26.2,
+        "congestion": "alto"
+      },
+      {
+        "origin": "san_isidro",
+        "destination": "pueblo_libre",
+        "origin_name": "San Isidro",
+        "destination_name": "Pueblo Libre",
+        "expected_requests": 27.64,
+        "peak_hour": 18,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.11,
+        "travel_minutes": 26.2,
+        "congestion": "alto"
+      },
+      {
+        "origin": "jesus_maria",
+        "destination": "pueblo_libre",
+        "origin_name": "Jesús María",
+        "destination_name": "Pueblo Libre",
+        "expected_requests": 27.36,
+        "peak_hour": 18,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.19,
+        "travel_minutes": 17.5,
+        "congestion": "alto"
+      },
+      {
+        "origin": "surco",
+        "destination": "san_isidro",
+        "origin_name": "Santiago de Surco",
+        "destination_name": "San Isidro",
+        "expected_requests": 27.14,
+        "peak_hour": 8,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.26,
+        "travel_minutes": 39.9,
+        "congestion": "alto"
+      },
+      {
+        "origin": "san_isidro",
+        "destination": "san_borja",
+        "origin_name": "San Isidro",
+        "destination_name": "San Borja",
+        "expected_requests": 27.03,
+        "peak_hour": 18,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.31,
+        "travel_minutes": 19.1,
+        "congestion": "alto"
+      },
+      {
+        "origin": "jesus_maria",
+        "destination": "san_isidro",
+        "origin_name": "Jesús María",
+        "destination_name": "San Isidro",
+        "expected_requests": 26.93,
+        "peak_hour": 8,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.28,
+        "travel_minutes": 18.3,
+        "congestion": "alto"
+      },
+      {
+        "origin": "surco",
+        "destination": "jesus_maria",
+        "origin_name": "Santiago de Surco",
+        "destination_name": "Jesús María",
+        "expected_requests": 26.66,
+        "peak_hour": 8,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.27,
+        "travel_minutes": 56.3,
+        "congestion": "alto"
+      },
+      {
+        "origin": "jesus_maria",
+        "destination": "miraflores",
+        "origin_name": "Jesús María",
+        "destination_name": "Miraflores",
+        "expected_requests": 26.65,
+        "peak_hour": 8,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.17,
+        "travel_minutes": 32.0,
+        "congestion": "alto"
+      },
+      {
+        "origin": "jesus_maria",
+        "destination": "lince",
+        "origin_name": "Jesús María",
+        "destination_name": "Lince",
+        "expected_requests": 26.57,
+        "peak_hour": 18,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.28,
+        "travel_minutes": 18.2,
+        "congestion": "alto"
+      },
+      {
+        "origin": "san_isidro",
+        "destination": "jesus_maria",
+        "origin_name": "San Isidro",
+        "destination_name": "Jesús María",
+        "expected_requests": 26.48,
+        "peak_hour": 18,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.1,
+        "travel_minutes": 16.8,
+        "congestion": "alto"
+      },
+      {
+        "origin": "san_isidro",
+        "destination": "la_molina",
+        "origin_name": "San Isidro",
+        "destination_name": "La Molina",
+        "expected_requests": 26.43,
+        "peak_hour": 18,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.31,
+        "travel_minutes": 62.8,
+        "congestion": "alto"
+      },
+      {
+        "origin": "lince",
+        "destination": "jesus_maria",
+        "origin_name": "Lince",
+        "destination_name": "Jesús María",
+        "expected_requests": 26.3,
+        "peak_hour": 8,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.23,
+        "travel_minutes": 17.9,
+        "congestion": "alto"
+      },
+      {
+        "origin": "san_isidro",
+        "destination": "lince",
+        "origin_name": "San Isidro",
+        "destination_name": "Lince",
+        "expected_requests": 26.16,
+        "peak_hour": 18,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.23,
+        "travel_minutes": 17.9,
+        "congestion": "alto"
+      },
+      {
+        "origin": "lince",
+        "destination": "surco",
+        "origin_name": "Lince",
+        "destination_name": "Santiago de Surco",
+        "expected_requests": 26.15,
+        "peak_hour": 18,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.21,
+        "travel_minutes": 44.1,
+        "congestion": "alto"
+      },
+      {
+        "origin": "jesus_maria",
+        "destination": "san_borja",
+        "origin_name": "Jesús María",
+        "destination_name": "San Borja",
+        "expected_requests": 25.89,
+        "peak_hour": 18,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.14,
+        "travel_minutes": 30.3,
+        "congestion": "alto"
+      },
+      {
+        "origin": "pueblo_libre",
+        "destination": "jesus_maria",
+        "origin_name": "Pueblo Libre",
+        "destination_name": "Jesús María",
+        "expected_requests": 25.89,
+        "peak_hour": 8,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.13,
+        "travel_minutes": 17.1,
+        "congestion": "alto"
+      },
+      {
+        "origin": "miraflores",
+        "destination": "pueblo_libre",
+        "origin_name": "Miraflores",
+        "destination_name": "Pueblo Libre",
+        "expected_requests": 25.74,
+        "peak_hour": 18,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.26,
+        "travel_minutes": 42.4,
+        "congestion": "alto"
+      },
+      {
+        "origin": "miraflores",
+        "destination": "san_borja",
+        "origin_name": "Miraflores",
+        "destination_name": "San Borja",
+        "expected_requests": 25.66,
+        "peak_hour": 18,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.23,
+        "travel_minutes": 20.6,
+        "congestion": "alto"
+      },
+      {
+        "origin": "san_isidro",
+        "destination": "miraflores",
+        "origin_name": "San Isidro",
+        "destination_name": "Miraflores",
+        "expected_requests": 25.66,
+        "peak_hour": 18,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.23,
+        "travel_minutes": 17.8,
+        "congestion": "alto"
+      },
+      {
+        "origin": "pueblo_libre",
+        "destination": "san_isidro",
+        "origin_name": "Pueblo Libre",
+        "destination_name": "San Isidro",
+        "expected_requests": 25.41,
+        "peak_hour": 8,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.12,
+        "travel_minutes": 26.4,
+        "congestion": "alto"
+      },
+      {
+        "origin": "surco",
+        "destination": "miraflores",
+        "origin_name": "Santiago de Surco",
+        "destination_name": "Miraflores",
+        "expected_requests": 25.41,
+        "peak_hour": 8,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.15,
+        "travel_minutes": 26.6,
+        "congestion": "alto"
+      },
+      {
+        "origin": "miraflores",
+        "destination": "jesus_maria",
+        "origin_name": "Miraflores",
+        "destination_name": "Jesús María",
+        "expected_requests": 25.19,
+        "peak_hour": 18,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.26,
+        "travel_minutes": 33.3,
+        "congestion": "alto"
+      },
+      {
+        "origin": "miraflores",
+        "destination": "lince",
+        "origin_name": "Miraflores",
+        "destination_name": "Lince",
+        "expected_requests": 24.98,
+        "peak_hour": 18,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.14,
+        "travel_minutes": 24.0,
+        "congestion": "alto"
+      },
+      {
+        "origin": "lince",
+        "destination": "san_isidro",
+        "origin_name": "Lince",
+        "destination_name": "San Isidro",
+        "expected_requests": 24.73,
+        "peak_hour": 8,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.2,
+        "travel_minutes": 17.6,
+        "congestion": "alto"
+      },
+      {
+        "origin": "lince",
+        "destination": "miraflores",
+        "origin_name": "Lince",
+        "destination_name": "Miraflores",
+        "expected_requests": 24.65,
+        "peak_hour": 8,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.31,
+        "travel_minutes": 25.8,
+        "congestion": "alto"
+      },
+      {
+        "origin": "san_borja",
+        "destination": "san_isidro",
+        "origin_name": "San Borja",
+        "destination_name": "San Isidro",
+        "expected_requests": 24.42,
+        "peak_hour": 8,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.1,
+        "travel_minutes": 17.4,
+        "congestion": "alto"
+      },
+      {
+        "origin": "san_borja",
+        "destination": "jesus_maria",
+        "origin_name": "San Borja",
+        "destination_name": "Jesús María",
+        "expected_requests": 24.22,
+        "peak_hour": 8,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.12,
+        "travel_minutes": 30.0,
+        "congestion": "alto"
+      },
+      {
+        "origin": "miraflores",
+        "destination": "san_isidro",
+        "origin_name": "Miraflores",
+        "destination_name": "San Isidro",
+        "expected_requests": 24.19,
+        "peak_hour": 8,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.13,
+        "travel_minutes": 17.0,
+        "congestion": "alto"
+      },
+      {
+        "origin": "jesus_maria",
+        "destination": "la_molina",
+        "origin_name": "Jesús María",
+        "destination_name": "La Molina",
+        "expected_requests": 23.96,
+        "peak_hour": 18,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.17,
+        "travel_minutes": 67.1,
+        "congestion": "alto"
+      },
+      {
+        "origin": "lince",
+        "destination": "san_borja",
+        "origin_name": "Lince",
+        "destination_name": "San Borja",
+        "expected_requests": 23.87,
+        "peak_hour": 18,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.3,
+        "travel_minutes": 21.0,
+        "congestion": "alto"
+      },
+      {
+        "origin": "pueblo_libre",
+        "destination": "lince",
+        "origin_name": "Pueblo Libre",
+        "destination_name": "Lince",
+        "expected_requests": 23.49,
+        "peak_hour": 8,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.24,
+        "travel_minutes": 25.2,
+        "congestion": "alto"
+      },
+      {
+        "origin": "lince",
+        "destination": "pueblo_libre",
+        "origin_name": "Lince",
+        "destination_name": "Pueblo Libre",
+        "expected_requests": 23.47,
+        "peak_hour": 18,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.09,
+        "travel_minutes": 23.5,
+        "congestion": "alto"
+      },
+      {
+        "origin": "surco",
+        "destination": "lince",
+        "origin_name": "Santiago de Surco",
+        "destination_name": "Lince",
+        "expected_requests": 23.45,
+        "peak_hour": 8,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.14,
+        "travel_minutes": 42.8,
+        "congestion": "alto"
+      },
+      {
+        "origin": "miraflores",
+        "destination": "la_molina",
+        "origin_name": "Miraflores",
+        "destination_name": "La Molina",
+        "expected_requests": 23.35,
+        "peak_hour": 18,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.24,
+        "travel_minutes": 62.6,
+        "congestion": "alto"
+      },
+      {
+        "origin": "pueblo_libre",
+        "destination": "miraflores",
+        "origin_name": "Pueblo Libre",
+        "destination_name": "Miraflores",
+        "expected_requests": 23.21,
+        "peak_hour": 8,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.25,
+        "travel_minutes": 42.1,
+        "congestion": "alto"
+      },
+      {
+        "origin": "san_borja",
+        "destination": "miraflores",
+        "origin_name": "San Borja",
+        "destination_name": "Miraflores",
+        "expected_requests": 22.82,
+        "peak_hour": 8,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.23,
+        "travel_minutes": 20.6,
+        "congestion": "alto"
+      },
+      {
+        "origin": "la_molina",
+        "destination": "san_isidro",
+        "origin_name": "La Molina",
+        "destination_name": "San Isidro",
+        "expected_requests": 22.75,
+        "peak_hour": 8,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.16,
+        "travel_minutes": 58.7,
+        "congestion": "alto"
+      },
+      {
+        "origin": "san_borja",
+        "destination": "lince",
+        "origin_name": "San Borja",
+        "destination_name": "Lince",
+        "expected_requests": 21.89,
+        "peak_hour": 8,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.25,
+        "travel_minutes": 20.5,
+        "congestion": "alto"
+      },
+      {
+        "origin": "lince",
+        "destination": "la_molina",
+        "origin_name": "Lince",
+        "destination_name": "La Molina",
+        "expected_requests": 21.87,
+        "peak_hour": 18,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.31,
+        "travel_minutes": 61.1,
+        "congestion": "alto"
+      },
+      {
+        "origin": "la_molina",
+        "destination": "jesus_maria",
+        "origin_name": "La Molina",
+        "destination_name": "Jesús María",
+        "expected_requests": 21.62,
+        "peak_hour": 8,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.18,
+        "travel_minutes": 67.1,
+        "congestion": "alto"
+      },
+      {
+        "origin": "surco",
+        "destination": "pueblo_libre",
+        "origin_name": "Santiago de Surco",
+        "destination_name": "Pueblo Libre",
+        "expected_requests": 21.36,
+        "peak_hour": 8,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.25,
+        "travel_minutes": 67.7,
+        "congestion": "alto"
+      },
+      {
+        "origin": "pueblo_libre",
+        "destination": "surco",
+        "origin_name": "Pueblo Libre",
+        "destination_name": "Santiago de Surco",
+        "expected_requests": 21.18,
+        "peak_hour": 18,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.1,
+        "travel_minutes": 63.0,
+        "congestion": "alto"
+      },
+      {
+        "origin": "surco",
+        "destination": "san_borja",
+        "origin_name": "Santiago de Surco",
+        "destination_name": "San Borja",
+        "expected_requests": 21.13,
+        "peak_hour": 18,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.24,
+        "travel_minutes": 26.4,
+        "congestion": "alto"
+      },
+      {
+        "origin": "pueblo_libre",
+        "destination": "san_borja",
+        "origin_name": "Pueblo Libre",
+        "destination_name": "San Borja",
+        "expected_requests": 20.91,
+        "peak_hour": 18,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.22,
+        "travel_minutes": 44.9,
+        "congestion": "alto"
+      },
+      {
+        "origin": "la_molina",
+        "destination": "miraflores",
+        "origin_name": "La Molina",
+        "destination_name": "Miraflores",
+        "expected_requests": 20.48,
+        "peak_hour": 8,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.3,
+        "travel_minutes": 64.3,
+        "congestion": "alto"
+      },
+      {
+        "origin": "la_molina",
+        "destination": "lince",
+        "origin_name": "La Molina",
+        "destination_name": "Lince",
+        "expected_requests": 20.18,
+        "peak_hour": 8,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.29,
+        "travel_minutes": 60.6,
+        "congestion": "alto"
+      },
+      {
+        "origin": "san_borja",
+        "destination": "pueblo_libre",
+        "origin_name": "San Borja",
+        "destination_name": "Pueblo Libre",
+        "expected_requests": 19.89,
+        "peak_hour": 8,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.13,
+        "travel_minutes": 43.0,
+        "congestion": "alto"
+      },
+      {
+        "origin": "san_borja",
+        "destination": "surco",
+        "origin_name": "San Borja",
+        "destination_name": "Santiago de Surco",
+        "expected_requests": 19.66,
+        "peak_hour": 8,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.08,
+        "travel_minutes": 24.4,
+        "congestion": "alto"
+      },
+      {
+        "origin": "pueblo_libre",
+        "destination": "la_molina",
+        "origin_name": "Pueblo Libre",
+        "destination_name": "La Molina",
+        "expected_requests": 18.94,
+        "peak_hour": 18,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.25,
+        "travel_minutes": 83.8,
+        "congestion": "alto"
+      },
+      {
+        "origin": "la_molina",
+        "destination": "pueblo_libre",
+        "origin_name": "La Molina",
+        "destination_name": "Pueblo Libre",
+        "expected_requests": 18.5,
+        "peak_hour": 8,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.2,
+        "travel_minutes": 81.9,
+        "congestion": "alto"
+      },
+      {
+        "origin": "la_molina",
+        "destination": "surco",
+        "origin_name": "La Molina",
+        "destination_name": "Santiago de Surco",
+        "expected_requests": 18.06,
+        "peak_hour": 8,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.29,
+        "travel_minutes": 48.3,
+        "congestion": "alto"
+      },
+      {
+        "origin": "san_borja",
+        "destination": "la_molina",
+        "origin_name": "San Borja",
+        "destination_name": "La Molina",
+        "expected_requests": 17.35,
+        "peak_hour": 18,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.23,
+        "travel_minutes": 43.4,
+        "congestion": "alto"
+      },
+      {
+        "origin": "surco",
+        "destination": "la_molina",
+        "origin_name": "Santiago de Surco",
+        "destination_name": "La Molina",
+        "expected_requests": 17.16,
+        "peak_hour": 18,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.12,
+        "travel_minutes": 44.8,
+        "congestion": "alto"
+      },
+      {
+        "origin": "la_molina",
+        "destination": "san_borja",
+        "origin_name": "La Molina",
+        "destination_name": "San Borja",
+        "expected_requests": 16.62,
+        "peak_hour": 8,
+        "traffic_peak_hour": 18,
+        "traffic_factor": 2.18,
+        "travel_minutes": 42.4,
+        "congestion": "alto"
+      }
+    ],
+    "origins": [
+      {
+        "id": "san_isidro",
+        "name": "San Isidro",
+        "expected_requests": 189.73
+      },
+      {
+        "id": "jesus_maria",
+        "name": "Jesús María",
+        "expected_requests": 186.2
+      },
+      {
+        "id": "miraflores",
+        "name": "Miraflores",
+        "expected_requests": 177.39
+      },
+      {
+        "id": "lince",
+        "name": "Lince",
+        "expected_requests": 171.05
+      },
+      {
+        "id": "surco",
+        "name": "Santiago de Surco",
+        "expected_requests": 162.31
+      },
+      {
+        "id": "pueblo_libre",
+        "name": "Pueblo Libre",
+        "expected_requests": 159.04
+      },
+      {
+        "id": "san_borja",
+        "name": "San Borja",
+        "expected_requests": 150.25
+      },
+      {
+        "id": "la_molina",
+        "name": "La Molina",
+        "expected_requests": 138.21
+      }
+    ],
+    "destinations": [
+      {
+        "id": "jesus_maria",
+        "name": "Jesús María",
+        "expected_requests": 176.37
+      },
+      {
+        "id": "san_isidro",
+        "name": "San Isidro",
+        "expected_requests": 175.57
+      },
+      {
+        "id": "surco",
+        "name": "Santiago de Surco",
+        "expected_requests": 172.49
+      },
+      {
+        "id": "miraflores",
+        "name": "Miraflores",
+        "expected_requests": 168.88
+      },
+      {
+        "id": "lince",
+        "name": "Lince",
+        "expected_requests": 166.72
+      },
+      {
+        "id": "pueblo_libre",
+        "name": "Pueblo Libre",
+        "expected_requests": 163.95
+      },
+      {
+        "id": "san_borja",
+        "name": "San Borja",
+        "expected_requests": 161.12
+      },
+      {
+        "id": "la_molina",
+        "name": "La Molina",
+        "expected_requests": 149.07
+      }
+    ],
+    "notice": "Demostración con datos sintéticos. No representa tráfico real ni personas identificadas."
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "profile_default",
+  "description": "Perfil balanceado (pesos iguales), usado cuando el pasajero no elige ninguno.",
+  "criteria": ["tiempo_espera", "calificacion", "seguridad_percibida", "asientos_libres", "distancia"],
+  "matrix": [
+    [1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1],
+    [1, 1, 1, 1, 1]
+  ]
+}

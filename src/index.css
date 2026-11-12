@@ -1,0 +1,25 @@
+:root { font-family: var(--font-sans); color-scheme: light; font-synthesis: none; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--color-bg-page); color: var(--color-text-on-dark); }
+#root { min-height: 100dvh; }
+button, input, select, textarea { font: inherit; }
+button, a { -webkit-tap-highlight-color: transparent; }
+button, a, input, select { touch-action: manipulation; }
+button:not(:disabled), a { cursor: pointer; }
+@layer base { h1, h2, h3, p { margin: 0; } }
+.bg-bg-surface, .bg-bg-sunken, .vamo-surface { color: var(--color-text-primary); }
+.vamo-page { width: 100%; max-width: 480px; margin: 0 auto; padding: 24px 20px 104px; }
+.vamo-title { font-size: clamp(32px, 8vw, 40px); font-weight: 800; line-height: 1.12; letter-spacing: -1.5px; }
+.vamo-accent { color: var(--color-accent-500); }
+.vamo-underline { position: relative; display: inline-block; }
+.vamo-underline::after { content: ''; position: absolute; width: 80%; height: 5px; left: 3%; bottom: -10px; background: var(--color-accent-500); border-radius: 50%; transform: rotate(-3deg); }
+.vamo-form { background: var(--color-bg-surface); color: var(--color-text-primary); border-radius: var(--radius-xl); padding: 24px; }
+.vamo-form fieldset { min-width: 0; }
+.vamo-auth { max-width: 480px; min-height: 100dvh; margin: auto; padding: 32px 20px; }
+.vamo-route-art { width: 100%; height: auto; display: block; }
+.vamo-page > h1, .bg-bg-page > h1 { color: var(--color-text-on-dark); }
+.vamo-bottom { background: var(--color-bg-page); border-color: color-mix(in srgb, var(--color-text-on-dark) 20%, transparent); }
+.vamo-bottom a { color: var(--color-text-on-dark); }
+.vamo-bottom a[aria-current=page] { color: var(--color-accent-500); background: transparent; }
+.vamo-bottom a[aria-current=page]::after { content: ''; width: 24px; height: 3px; background: currentColor; border-radius: 8px; }
+@media (min-width: 720px) { .vamo-auth, .vamo-page { padding-top: 40px; } }

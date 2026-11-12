@@ -1,0 +1,12 @@
+{
+  "name": "group_member_4",
+  "description": "Viaja seguido en grupo: asientos libres pesa más que para los demás.",
+  "criteria": ["tiempo_espera", "calificacion", "seguridad_percibida", "asientos_libres", "distancia"],
+  "matrix": [
+    [1, 1, 1, 0.5, 1],
+    [1, 1, 1, 0.5, 1],
+    [1, 1, 1, 0.5, 1],
+    [2, 2, 2, 1, 2],
+    [1, 1, 1, 0.5, 1]
+  ]
+}

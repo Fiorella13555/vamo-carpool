@@ -1,0 +1,48 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Datos reales del watchlist (nombres de personas reales, nunca al repo).
+# Se ignora CUALQUIER .csv en data/ salvo watchlist_example.csv (nombres
+# ficticios, el único que sí se trackea) -- a propósito más amplio que un
+# solo nombre de archivo: evita que una copia del CSV real con otro nombre
+# (ej. data/Buscados.csv, el nombre original al descargarlo) se cuele en un
+# commit.
+data/*.csv
+!data/watchlist_example.csv
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Modelos regenerables, entornos y cachés de Python
+**/__pycache__/
+**/.pytest_cache/
+**/.venv/
+recommendation-service/models/*.joblib
+
+# Configuración y herramientas locales
+.env
+.env.*
+!.env.example
+.openai/
+supabase/.temp/
+supabase/.branches/
+*.tsbuildinfo

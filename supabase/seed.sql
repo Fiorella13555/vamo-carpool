@@ -1,0 +1,4 @@
+-- Vamo: seed público intencionalmente vacío.
+-- Crea las cuentas de prueba desde el registro de la app con contraseñas
+-- únicas definidas localmente. No publicar credenciales ni sembrar usuarios
+-- con contraseñas compartidas en una base remota.

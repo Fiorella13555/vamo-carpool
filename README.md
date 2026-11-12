@@ -64,3 +64,5 @@ npm run lint
 ```
 
 Los datos sintéticos y los módulos Python se conservan en `recommendation-service/`; sus instrucciones siguen ahí. El nuevo AHP/Fuzzy del pasajero funciona en TypeScript y no depende de que ese servicio opcional esté desplegado.
+
+El seed público está vacío y no publica usuarios ni contraseñas demo. Crea cuentas de prueba propias desde la app.

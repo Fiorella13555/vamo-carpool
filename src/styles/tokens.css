@@ -1,0 +1,155 @@
+/* Tokens de diseño de Vamo. Única fuente de verdad: ningún componente
+   define un color, radio, sombra o degradado que no venga de aquí (ver
+   CLAUDE.md, sección "Guía de estilo"). Propuesta aprobada:
+   https://claude.ai/artifact/LcrpwyiSx9sTpV9fKYDoEF
+*/
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+
+  /* Marino — color principal. Punto de partida #0B2559 (navy-900). navy-950
+     existe solo para el extremo oscuro de los degradados, fuera de la
+     escala estándar 50-900 que pidió la propuesta. */
+  --color-navy-50: #eef2fb;
+  --color-navy-100: #d9e2f6;
+  --color-navy-200: #b3c5ed;
+  --color-navy-300: #88a4dd;
+  --color-navy-400: #5f82c8;
+  --color-navy-500: #3f63ac;
+  --color-navy-600: #2a4989;
+  --color-navy-700: #1b3269;
+  --color-navy-800: #11214f;
+  --color-navy-900: #0b2345;
+  --color-navy-950: #081a34;
+
+  /* Acento azul eléctrico: degradados, botones, enlaces. accent-500 NO
+     alcanza 4.5:1 con texto blanco (ver propuesta) — solo para texto
+     grande/negrita, íconos o fondos decorativos. */
+  --color-accent-50: #fff1d5;
+  --color-accent-100: #f7e2bb;
+  --color-accent-500: #e8b45e;
+  --color-accent-600: #db9f39;
+  --color-accent-700: #9a6319;
+
+  /* Ámbar: reservado para calificaciones (estrellas). Nunca se usa como
+     "warning" semántico -- ese es un naranja aparte, para no mezclar los
+     dos significados. */
+  --color-amber-100: #fef3c7;
+  --color-amber-400: #fbbf24;
+  --color-amber-500: #f59e0b;
+
+  /* Semánticos */
+  --color-success: #77501c;
+  --color-success-soft: #f7e2bb;
+  --color-warning: #ea580c;
+  --color-warning-soft: #ffedd5;
+  --color-error: #dc2626;
+  --color-error-soft: #fee2e2;
+  --color-info: #2563eb;
+  --color-info-soft: #f7e2bb;
+
+  /* Fondo, bordes, texto */
+  --color-bg-page: #0b2345;
+  --color-bg-surface: #fff9ef;
+  --color-bg-sunken: #e8dcc8;
+  --color-border-subtle: #dfd3c1;
+  --color-border-default: #bcad95;
+  --color-text-primary: #0b2345;
+  --color-text-secondary: #526071;
+  --color-text-disabled: #7e8792;
+  --color-text-on-dark: #fff9ef;
+  --color-text-on-dark-muted: #e8dcc8;
+
+  /* Radios: nombres alineados a las utilidades rounded-* de Tailwind */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  /* Sombra con tinte marino, nunca gris puro */
+  --shadow-xs: 0 1px 2px rgba(11, 37, 89, 0.07);
+  --shadow-sm: 0 4px 14px rgba(11, 37, 89, 0.1);
+  --shadow-md: 0 14px 34px rgba(11, 37, 89, 0.14);
+}
+
+/* Espaciado: 4/8/12/16/24/32px ya es la escala por defecto de Tailwind
+   (1=4px, 2=8px, 3=12px, 4=16px, 6=24px, 8=32px) -- no hace falta
+   redefinirla, solo usarla (gap-4, p-6, etc). */
+
+/* ---------- Degradados y textura: no caben bien en la escala de color de
+   Tailwind (son multi-stop, con ángulo y manchas radiales), así que viven
+   como variables CSS propias + utilidades pequeñas. Dos intensidades, como
+   pidió la propuesta. ---------- */
+:root {
+  --gradient-hero: linear-gradient(var(--color-bg-page), var(--color-bg-page));
+  --gradient-hero-bloom: var(--gradient-hero);
+  --gradient-soft: var(--gradient-hero);
+  --gradient-button: linear-gradient(var(--color-accent-500), var(--color-accent-500));
+  --gradient-button-hover: linear-gradient(var(--color-accent-600), var(--color-accent-600));
+  --texture-dots: none;
+}
+
+/* Alta intensidad: login/registro, estados de verificación, panel admin.
+   Incluye las manchas de luz + la textura de puntos encima. */
+.bg-gradient-hero {
+  background-image: var(--texture-dots), var(--gradient-hero-bloom);
+  background-size: 20px 20px, auto;
+}
+/* Baja intensidad: cabecera del home, tarjeta de "viaje en curso". */
+.bg-gradient-soft {
+  background-image: var(--gradient-soft);
+}
+.bg-gradient-button {
+  background-image: var(--gradient-button);
+}
+.bg-gradient-button:where(:hover, :active):not(:disabled) {
+  background-image: var(--gradient-button-hover);
+}
+
+/* ---------- Base ---------- */
+@layer base {
+  html {
+    @apply bg-bg-page text-text-on-dark;
+    font-family: var(--font-sans);
+  }
+  body {
+    margin: 0;
+  }
+
+  /* iPhone: cualquier campo por debajo de 16px hace que Safari aplique
+     zoom automático al enfocarlo, lo que rompe el layout del formulario. */
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent-700);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* ---------- Áreas seguras de iPhone ---------- */
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.safe-x {
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}

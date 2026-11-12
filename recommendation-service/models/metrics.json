@@ -1,0 +1,85 @@
+{
+  "data_source": "synthetic",
+  "seed": 42,
+  "rows": 241920,
+  "data_sha256": "36b1d8cff0b4ead4cd29a6c4e7f9f7d5de81a6dc39c02184c679eed022d343f9",
+  "algorithm": "HistGradientBoostingRegressor",
+  "sklearn_version": "1.8.0",
+  "features": [
+    "route_code",
+    "weekday",
+    "hour"
+  ],
+  "targets": {
+    "demand": "Solicitudes por ruta y hora (no personas únicas)",
+    "traffic": "Minutos de viaje sintéticos"
+  },
+  "splits": {
+    "train": {
+      "start": "2026-05-07",
+      "end": "2026-09-09",
+      "rows": 169344
+    },
+    "validation": {
+      "start": "2026-09-10",
+      "end": "2026-10-06",
+      "rows": 36288
+    },
+    "test": {
+      "start": "2026-10-07",
+      "end": "2026-11-02",
+      "rows": 36288
+    }
+  },
+  "evaluation": {
+    "validation": {
+      "demand": {
+        "model": {
+          "mae": 0.6276,
+          "rmse": 0.9168,
+          "poisson_deviance": 0.8924
+        },
+        "seasonal_baseline": {
+          "mae": 0.6382,
+          "rmse": 0.9386,
+          "poisson_deviance": 1.0344
+        }
+      },
+      "traffic": {
+        "model": {
+          "mae": 1.3233,
+          "rmse": 1.8449
+        },
+        "seasonal_baseline": {
+          "mae": 1.3564,
+          "rmse": 1.8874
+        }
+      }
+    },
+    "test": {
+      "demand": {
+        "model": {
+          "mae": 0.6253,
+          "rmse": 0.9111,
+          "poisson_deviance": 0.8949
+        },
+        "seasonal_baseline": {
+          "mae": 0.6361,
+          "rmse": 0.9337,
+          "poisson_deviance": 1.0349
+        }
+      },
+      "traffic": {
+        "model": {
+          "mae": 1.3275,
+          "rmse": 1.8538
+        },
+        "seasonal_baseline": {
+          "mae": 1.3587,
+          "rmse": 1.8988
+        }
+      }
+    }
+  },
+  "limitations": "Métricas sobre datos sintéticos; no miden capacidad predictiva sobre tráfico o demanda reales."
+}

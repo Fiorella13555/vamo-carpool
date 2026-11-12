@@ -1,0 +1,22 @@
+import {act,cleanup,fireEvent,render,screen} from '@testing-library/react';
+import {MemoryRouter} from 'react-router-dom';
+import {afterEach,it,expect,vi} from 'vitest';
+import type {JourneyOption} from './types';
+const mock=vi.hoisted(()=>({options:vi.fn(),request:vi.fn()}));
+vi.mock('./api',()=>mock);
+vi.mock('./useWalking',()=>({useWalking:()=>30}));
+vi.mock('../../components/LocationSearch',()=>({FitJourney:()=>null,LocationSearch:({label,onSelect}:{label:string;onSelect:(p:{lat:number;lng:number})=>void})=><button onClick={()=>onSelect({lat:-12.1,lng:-77.01})}>{label}</button>}));
+vi.mock('@vis.gl/react-google-maps',()=>({APIProvider:({children}:{children:React.ReactNode})=><>{children}</>,Map:({children}:{children:React.ReactNode})=><div>{children}</div>,AdvancedMarker:()=>null,Polyline:()=>null}));
+import {JourneySearch} from './JourneySearch';
+afterEach(()=>{cleanup();vi.restoreAllMocks();});
+it('integra AHP/Fuzzy con las opciones nuevas sin pedir una reserva automáticamente',async()=>{
+ const option:JourneyOption={trip_id:'a',driver_id:'d',driver_name:'Mayor aporte',avenida:'Ruta',departure_time:'2099-01-01T12:00:00Z',status:'scheduled',seats_available:2,price:9,pickup_fraction:.2,dropoff_fraction:.7,route_duration_seconds:1200,pickup:{lat:-12.1,lng:-77.01},dropoff:{lat:-12.09,lng:-77},route:[],pickup_distance_m:0,dropoff_distance_m:0,driver_progress:null};
+ mock.options.mockResolvedValue([option,{...option,trip_id:'b',driver_name:'Menor aporte',price:2}]);
+ render(<MemoryRouter><JourneySearch/></MemoryRouter>);
+ fireEvent.click(screen.getByRole('button',{name:'Punto de inicio'}));fireEvent.click(screen.getByRole('button',{name:'Destino final'}));
+ await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'Comparar viajes'}));});
+ expect(screen.getByText(/#1 para ti/)).toBeTruthy();
+ const cards=screen.getAllByRole('button',{name:'Elegir y solicitar asiento'});expect(cards).toHaveLength(2);
+ const text=document.body.textContent!;expect(text.indexOf('Menor aporte · Ruta')).toBeLessThan(text.indexOf('Mayor aporte · Ruta'));
+ expect(mock.request).not.toHaveBeenCalled();
+});

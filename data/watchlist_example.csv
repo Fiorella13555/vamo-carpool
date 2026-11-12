@@ -1,0 +1,12 @@
+# DATOS FICTICIOS - SOLO PARA DEMOSTRACION DEL REPOSITORIO. Ninguno de
+# estos nombres corresponde a una persona real. Sirve para que
+# scripts/import-watchlist.ts y el resto del módulo de tamizado funcionen
+# sin necesitar el archivo real (data/watchlist_snapshot.csv, gitignored).
+,Buscados
+0,Rigoberto Casanova Pumallanque
+1,Herminia Soledad Quiroga Delvalle
+2,Maximo Trelles Ancajima
+3,Perpetua Zambrano Huillca
+4,Facundo Elicio Montoya Sarmiento
+5,Benedicta Isaura Palomino Chuquimia
+6,Teodoro Wenceslao Campoverde Luyo
