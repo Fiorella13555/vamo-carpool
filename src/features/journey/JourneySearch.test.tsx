@@ -17,6 +17,7 @@ it('integra AHP/Fuzzy con las opciones nuevas sin pedir una reserva automáticam
  await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'Comparar viajes'}));});
  expect(screen.getByText(/#1 para ti/)).toBeTruthy();
  const cards=screen.getAllByRole('button',{name:'Elegir y solicitar asiento'});expect(cards).toHaveLength(2);
+ expect(screen.getByText('Aporte: S/ 2.00')).toBeTruthy();
  const text=document.body.textContent!;expect(text.indexOf('Menor aporte · Ruta')).toBeLessThan(text.indexOf('Mayor aporte · Ruta'));
  expect(mock.request).not.toHaveBeenCalled();
 });

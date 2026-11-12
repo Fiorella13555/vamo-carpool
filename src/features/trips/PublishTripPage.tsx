@@ -28,7 +28,6 @@ function PublishTripForm() {
   const [destination, setDestination] = useState<LatLng | null>(null);
   const [route, setRoute] = useState<LatLng[] | null>(null);
   const [pickMode, setPickMode] = useState<PickMode>(null);
-  const [seatPrice, setSeatPrice] = useState("");
   const [routeSeconds, setRouteSeconds] = useState<number | null>(null);
   const [avenida, setAvenida] = useState("");
   const [departureTime, setDepartureTime] = useState("");
@@ -108,13 +107,12 @@ function PublishTripForm() {
       setError("La hora de salida debe ser en el futuro.");
       return;
     }
-    if (!Number.isFinite(Number(seatPrice)) || seatPrice === "" || Number(seatPrice)<0 || Number(seatPrice)>9999) {setError("Define un aporte válido en soles para el recorrido completo.");return;}
     if (!profile) return;
 
     setSubmitting(true);
     try {
       const tripId = await createTrip({
-        seatPrice:Number(seatPrice), routeDurationSeconds:routeSeconds,
+        routeDurationSeconds:routeSeconds,
         driverId: profile.id,
         origin,
         destination,
@@ -200,8 +198,7 @@ function PublishTripForm() {
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <Input label="Aporte por asiento para la ruta completa (S/)" type="number" min={0} max={9999} step="0.01" required value={seatPrice} onChange={e=>setSeatPrice(e.target.value)} placeholder="Ej. 6.00"/>
-          <p className="text-xs text-text-secondary">Cada pasajero verá el aporte proporcional al tramo que comparte. No se cambia tu recorrido para recogerlo.</p>
+          <p className="rounded-lg bg-bg-sunken p-3 text-sm text-text-secondary">Vamo calcula el aporte de cada pasajero según su tramo compartido. Verás el monto al recibir su solicitud.</p>
           <Input
             label="Avenida principal"
             value={avenida}

@@ -38,3 +38,8 @@ describe('un único flujo de viaje',()=>{
   show();await settle();expect((screen.getByRole('button',{name:'Iniciar viaje'}) as HTMLButtonElement).disabled).toBe(true);
  });
 });
+
+it('muestra al conductor el aporte acordado en la solicitud pendiente',async()=>{
+ const driver=structuredClone(snapshot);driver.is_driver=true;driver.requests[0].price=7.25;mocks.room.mockResolvedValue(driver);
+ show();await settle();expect(screen.getByText('Aporte: S/ 7.25')).toBeTruthy();expect(screen.getByRole('button',{name:'Aceptar'})).toBeTruthy();
+});

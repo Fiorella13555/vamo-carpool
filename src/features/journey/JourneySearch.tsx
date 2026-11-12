@@ -18,7 +18,7 @@ function Option({option,origin,destination,onSelect,busy,onMetrics}:{option:Jour
  const eta=estimateArrival({durationSeconds:option.route_duration_seconds,departureTime:option.departure_time,ongoing:option.status==='ongoing',progress:option.driver_progress,pickup:option.pickup_fraction,dropoff:option.dropoff_fraction,walkToPickup:toPickup,walkFromDropoff:fromDropoff,now});
  const finalSeconds=eta?.finalSeconds,reachable=eta?.canReachPickup;
  useEffect(()=>{onMetrics(option.trip_id,toPickup!==null&&fromDropoff!==null&&finalSeconds!=null&&reachable!==false?{id:option.trip_id,walkingSeconds:toPickup+fromDropoff,arrivalSeconds:finalSeconds,price:option.price,rating:option.standing?.rating_avg??null,ratingCount:option.standing?.rating_count??0}:null);},[option.trip_id,option.price,option.standing?.rating_avg,option.standing?.rating_count,toPickup,fromDropoff,finalSeconds,reachable,onMetrics]);
- return <Card className="flex flex-col gap-2"><div className="flex justify-between gap-3"><strong>{option.driver_name} · {option.avenida}</strong><strong>{soles(option.price)}</strong></div>
+ return <Card className="flex flex-col gap-2"><div className="flex justify-between gap-3"><strong>{option.driver_name} · {option.avenida}</strong><strong>Aporte: {soles(option.price)}</strong></div>
  <p className="text-xs">Conductor: {option.standing?.rating_count?`${option.standing.rating_avg?.toFixed(1)} ★ · ${option.standing.rating_count} valoraciones como conductor`:"Sin valoraciones como conductor"}</p>
  <p className="text-sm">Recojo estimado: {minutes(eta?.pickupSeconds)} · Bajada: {minutes(eta?.dropoffSeconds)}</p>
  <p className="text-sm font-bold">Tu destino final: {minutes(eta?.finalSeconds)}</p>

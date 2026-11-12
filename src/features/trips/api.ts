@@ -12,13 +12,12 @@ export interface CreateTripInput {
   avenida: string;
   departureTime: string;
   seatsTotal: number;
-  seatPrice: number;
   routeDurationSeconds: number;
 }
 
 export async function createTrip(input: CreateTripInput) {
   const { data, error } = await supabase.from("trips").insert({
-    seat_price:input.seatPrice, route_duration_seconds:input.routeDurationSeconds,
+    route_duration_seconds:input.routeDurationSeconds,
     driver_id: input.driverId,
     origin: pointToWkt(input.origin),
     destination: pointToWkt(input.destination),

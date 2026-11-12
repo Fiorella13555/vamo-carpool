@@ -42,7 +42,7 @@ Autorizar el dominio exacto nuevo en la clave web de Google y las redirecciones 
 
 ## Prueba de aceptación con dos cuentas y teléfonos
 
-1. Conductor verificado publica viaje futuro con aporte, duración y vehículo. Pasajero busca dos extremos y comprueba sugerencias, mapa, precio y caminatas.
+1. Conductor verificado publica viaje futuro con duración y vehículo; Vamo calcula el aporte. Pasajero busca dos extremos y comprueba sugerencias, mapa, precio y caminatas.
 2. Cambiar prioridades AHP y revisar que cambia el orden de opciones con métricas distintas; introducir comparaciones inconsistentes y verificar advertencia/orden geográfico. Falta de reseñas debe mostrarse como incertidumbre.
 3. Solicitar, aceptar/rechazar y seguir el flujo sin cambiar de pestaña. Retirar GPS durante más de 30 s debe impedir iniciar; recuperarlo permite continuar.
 4. Conductor cambia su objetivo/presupuesto en el asesor. Verificar que no selecciona más solicitudes que plazas y que no acepta automáticamente. La ruta dibujada no cambia.
@@ -53,3 +53,13 @@ Autorizar el dominio exacto nuevo en la clave web de Google y las redirecciones 
 9. Dos aceptaciones simultáneas para la última plaza: solo una puede confirmarse. Verificar que actualizar estatus no altera precio ni ruta. No dar por validada esta concurrencia solo porque pasan los tests de interfaz.
 
 No integrar con el despliegue actual hasta completar esta prueba. La app web necesita GPS en primer plano; las pruebas reales no se sustituyen por posiciones simuladas ni por el mapa planeado.
+
+## Aporte automático (20261112020000)
+
+Aplicar `20261112020000_automatic_contributions.sql` con `npx supabase db push --dry-run` y luego `npx supabase db push` antes de publicar viajes con el frontend nuevo. Sin esta migración, la nueva interfaz ya no envía `seat_price`, por lo que los viajes nuevos no tendrán cotización en la base anterior.
+
+La fórmula es `round(km_del_tramo * 0.80 * 1.25, 2)`, en soles por pasajero. `km_del_tramo` mide la longitud geodésica de la polilínea original entre el recojo y la bajada proyectados. No se cobran caminatas ni se divide el importe entre pasajeros. No se atribuye el 25% a una comisión: solo es el incremento solicitado.
+
+Búsqueda y registro de solicitud usan `journey_contribution`; la solicitud conserva su `quoted_price` y `request_journey` rechaza una cotización diferente de la mostrada. Las solicitudes ya existentes conservan su importe, incluso al aceptar, iniciar o finalizar. Las nuevas búsquedas usan la fórmula también en viajes publicados anteriormente. El trigger de viajes reemplaza cualquier monto manual al insertar o modificar ruta/importe. No se aplica un backfill sobre viajes con acuerdos.
+
+Comprobar en Supabase/PostGIS `supabase/tests/automatic_contributions.sql`, luego usar dos cuentas: ver aporte al comparar, solicitar, comprobar el mismo aporte en la solicitud del conductor y aceptar. Las pruebas locales de frontend y el análisis sintáctico no sustituyen esta comprobación de base de datos.

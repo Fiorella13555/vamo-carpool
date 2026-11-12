@@ -27,3 +27,14 @@ it('busca por ambos extremos, no únicamente el punto de recojo', async () => {
  await fetchNearbyTrips({lat:-12.1,lng:-77.03},150,{lat:-12.08,lng:-77.05});
  expect(mocks.rpc).toHaveBeenLastCalledWith('nearby_journeys', {passenger_lat:-12.1,passenger_lng:-77.03,destination_lat:-12.08,destination_lng:-77.05,tolerance_m:150});
 });
+
+it('deja el aporte al servidor al publicar el viaje', async () => {
+ const {createTrip}=await import('./api');
+ const single=vi.fn().mockResolvedValue({data:{id:'trip'},error:null});
+ mocks.from.mockReturnValue({insert:mocks.insert});
+ mocks.insert.mockReturnValue({select:vi.fn().mockReturnValue({single})});
+ await expect(createTrip({driverId:'driver',origin:{lat:-12.1,lng:-77.03},destination:{lat:-12.08,lng:-77.05},route:[{lat:-12.1,lng:-77.03},{lat:-12.08,lng:-77.05}],avenida:'Javier Prado',departureTime:'2099-01-01T12:00:00Z',seatsTotal:3,routeDurationSeconds:1200})).resolves.toBe('trip');
+ const payload=mocks.insert.mock.lastCall![0];
+ expect(payload).not.toHaveProperty('seat_price');
+ expect(payload).toMatchObject({route_duration_seconds:1200,seats_total:3,driver_id:'driver'});
+});

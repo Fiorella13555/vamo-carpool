@@ -34,7 +34,7 @@ function StopCard({data,request,now,onAction,busy,gpsReady}:{data:Room;request:J
  const eta=request.pickup_fraction!==null&&request.dropoff_fraction!==null?estimateArrival({durationSeconds:data.route_duration_seconds,departureTime:data.departure_time,ongoing:data.status==='ongoing',progress:live?progress:null,pickup:request.pickup_fraction,dropoff:request.dropoff_fraction,walkToPickup:walkPickup,walkFromDropoff:walkEnd,now,pickupStopSeconds:request.pickup_stop_seconds,dropoffStopSeconds:request.dropoff_stop_seconds,onboard:request.stage==='onboard'}):null;
  const selectedEnd=eta?.finalSeconds;
  return <Card className="flex flex-col gap-2">
- <div className="flex justify-between gap-2"><strong>{data.is_driver?request.name:'Tu asiento'}</strong><strong>{soles(request.price)}</strong></div>
+ <div className="flex justify-between gap-2"><strong>{data.is_driver?request.name:'Tu asiento'}</strong><strong>Aporte: {soles(request.price)}</strong></div>
  <p className="text-sm">{request.status==='pending'?'Esperando aceptación':request.status==='rejected'?'Solicitud rechazada':request.status==='cancelled'?'Solicitud cancelada':request.stage==='completed'?'Pasajero en su bajada':request.stage==='onboard'?'Pasajero a bordo':'Asiento confirmado'}</p>
  {['pending','accepted'].includes(request.status)&&request.stage!=='completed'&&!['finished','cancelled'].includes(data.status)&&<>
  {request.stage==='waiting'&&<p>Conductor al recojo: {minutes(eta?.pickupSeconds)} · Caminata al recojo: {minutes(walkPickup)}</p>}

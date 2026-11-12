@@ -4,7 +4,7 @@
 
 El conductor comparte asientos en un trayecto previsto. Mantiene su trazado y decide personalmente con quién comparte el viaje.
 
-1. Cuenta verificada con rol conductor y vehículo registrado. Publica origen/destino, polilínea calculada por Maps, horario, asientos y aporte de ruta completa.
+1. Cuenta verificada con rol conductor y vehículo registrado. Publica origen/destino, polilínea calculada por Maps, horario y asientos. Vamo calcula el aporte automáticamente.
 2. Se abre el viaje y activa GPS. Recibe solicitudes pendientes con paradas y aporte congelado.
 3. `DriverAdvisor` aplica reglas independientes de AHP/Fuzzy del pasajero. Descarta datos incompletos, GPS vencido, paradas invertidas y recojos superados. Ordena por mayor aporte o por recojo más próximo a lo largo de la ruta.
 4. Propone hasta el mínimo de plazas disponibles y presupuesto de nuevas paradas: 30 s por recojo + 30 s por bajada = 1 min por solicitud. Resume número de pasajeros, aporte adicional y minutos extra estimados. El presupuesto no incluye detenciones de reservas anteriores.
@@ -14,7 +14,7 @@ El conductor comparte asientos en un trayecto previsto. Mantiene su trazado y de
 
 ```mermaid
 flowchart TD
-    P["Publicar ruta fija y aporte"] --> Q["Solicitudes pendientes"]
+    P["Publicar ruta fija"] --> Q["Solicitudes pendientes"]
     Q --> R["Asesor por reglas"]
     R --> A["Decisión manual"]
     A -->|"aceptar"| G["GPS y asientos verificados"]
