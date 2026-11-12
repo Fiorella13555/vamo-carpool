@@ -3,7 +3,7 @@ import {MemoryRouter} from 'react-router-dom';
 import {afterEach,expect,it,vi} from 'vitest';
 vi.mock('../auth/AuthContext',()=>({useAuth:()=>({profile:{id:'passenger'}})}));
 vi.mock('../trips/api',()=>({fetchMyRequests:async()=>[{id:'a',trip_id:'t',status:'pending',trip:{avenida:'Ruta activa',status:'scheduled',departure_time:'2026-12-01T12:00:00Z'}},{id:'b',trip_id:'u',status:'accepted',journey_stage:'completed',trip:{avenida:'Ruta terminada',status:'finished',departure_time:'2026-11-01T12:00:00Z'}},{id:'c',trip_id:'v',status:'accepted',trip:{avenida:'Ruta cancelada',status:'cancelled',departure_time:'2026-11-01T12:00:00Z'}}]}));
-vi.mock('./api',()=>({fetchRatingsGiven:async()=>[]}));
+vi.mock('./api',()=>({fetchRatingTargets:async()=>[]}));
 import {MyRequestsPage} from './MyRequestsPage';
 afterEach(cleanup);
 it('muestra activos por defecto y conserva terminados/cancelados en Historial',async()=>{

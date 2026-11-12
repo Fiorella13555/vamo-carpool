@@ -8,6 +8,7 @@ vi.mock('./api',()=>({room:mocks.room,stage:vi.fn(),cancelJourney:mocks.cancel})
 vi.mock('./useJourneyGps',()=>({useJourneyGps:()=>({ready:mocks.ready,reading:null,error:null,retry:vi.fn()})}));
 vi.mock('./useWalking',()=>({useWalkingRoute:()=>({seconds:60,meters:120})}));
 vi.mock('../../components/LocationSearch',()=>({FitJourney:()=>null}));
+vi.mock('../ratings/TripRatings',()=>({TripRatings:()=> <p>Calificaciones del viaje</p>}));
 vi.mock('../history/JourneyHistoryPanel',()=>({JourneyHistoryPanel:()=>null}));
 vi.mock('../../lib/supabase',()=>({supabase:{}}));
 vi.mock('../trips/api',()=>({finishTrip:vi.fn(),respondToRequest:mocks.respond,startTrip:vi.fn()}));
@@ -91,4 +92,9 @@ it('la prioridad reordena las tres tarjetas y se conserva al refrescar',async()=
  fireEvent.change(screen.getByRole('combobox',{name:'Tu prioridad'}),{target:{value:'pickup'}});expect(names()).toEqual(['Solicitud de Bajo','Solicitud de Medio','Solicitud de Alto']);
  await act(async()=>{await vi.advanceTimersByTimeAsync(3000);});expect(names()).toEqual(['Solicitud de Bajo','Solicitud de Medio','Solicitud de Alto']);
  fireEvent.change(screen.getByRole('combobox',{name:'Tu prioridad'}),{target:{value:'contribution'}});expect(names()).toEqual(['Solicitud de Alto','Solicitud de Medio','Solicitud de Bajo']);expect(mocks.respond).not.toHaveBeenCalled();
+});
+
+it('ofrece las calificaciones al finalizar aun sin bajadas registradas',async()=>{
+ const data=structuredClone(snapshot);data.is_driver=true;data.status='finished';data.requests[0].status='accepted';mocks.room.mockResolvedValue(data);
+ show();await settle();expect(screen.getByText('Calificaciones del viaje')).toBeTruthy();
 });

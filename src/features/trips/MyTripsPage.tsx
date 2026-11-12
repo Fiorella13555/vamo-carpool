@@ -8,8 +8,7 @@ import {
 } from "./api";
 import type { PickupRequestWithPassenger } from "./api";
 import type { Trip, TripStatus } from "../../types/trip";
-import { fetchRatingsGiven } from "../ratings/api";
-import { RatingForm } from "../ratings/RatingForm";
+import { TripRatings } from "../ratings/TripRatings";
 import { Avatar, Card, Chip, EmptyState } from "../../components/ui";
 
 import {isTripActive} from './lifecycle';
@@ -34,7 +33,6 @@ export function MyTripsPage() {
   const [requestsByTrip, setRequestsByTrip] = useState<Map<string, PickupRequestWithPassenger[]>>(
     new Map(),
   );
-  const [ratedPairs, setRatedPairs] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,11 +49,8 @@ export function MyTripsPage() {
         list.push(r);
         grouped.set(r.trip_id, list);
       }
-      const finishedTripIds = myTrips.filter((t) => t.status === "finished").map((t) => t.id);
-      const ratingsGiven = await fetchRatingsGiven(profile.id, finishedTripIds);
       setTrips(myTrips);
       setRequestsByTrip(grouped);
-      setRatedPairs(new Set(ratingsGiven.map((r) => `${r.trip_id}:${r.rated_id}`)));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al cargar tus viajes.");
     } finally {
@@ -125,27 +120,7 @@ export function MyTripsPage() {
                 </div>
               )}
 
-              {trip.status === "finished" && accepted.length > 0 && profile && (
-                <div className="flex flex-col gap-2">
-                  <h3 className="text-sm font-bold text-text-primary">Calificar pasajeros</h3>
-                  {accepted.filter(req=>req.journey_stage==='completed').map((req) =>
-                    ratedPairs.has(`${trip.id}:${req.passenger_id}`) ? (
-                      <p key={req.id} className="text-sm text-text-secondary">
-                        Ya calificaste a {req.passenger?.nombre_pila ?? "este pasajero"}.
-                      </p>
-                    ) : (
-                      <RatingForm
-                        key={req.id}
-                        tripId={trip.id}
-                        raterId={profile.id}
-                        ratedId={req.passenger_id}
-                        ratedName={req.passenger?.nombre_pila ?? "este pasajero"}
-                        onSubmitted={() => loadData()}
-                      />
-                    ),
-                  )}
-                </div>
-              )}
+              {trip.status === "finished" && <TripRatings tripId={trip.id}/>}
             </Card>
           );
         })}

@@ -4,8 +4,7 @@ import { ClipboardList, Clock } from "lucide-react";
 import { useAuth } from "../auth/AuthContext";
 import { fetchMyRequests } from "../trips/api";
 import type { PickupRequestWithTrip } from "../trips/api";
-import { fetchRatingsGiven } from "./api";
-import { RatingForm } from "./RatingForm";
+import { TripRatings } from "./TripRatings";
 import { Card, Chip, EmptyState } from "../../components/ui";
 
 import {isRequestActive,requestLabel} from '../trips/lifecycle';
@@ -21,7 +20,6 @@ export function MyRequestsPage() {
   const { profile } = useAuth();
   const [section,setSection]=useState<'active'|'history'>('active');
   const [requests, setRequests] = useState<PickupRequestWithTrip[]>([]);
-  const [ratedTripIds, setRatedTripIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,12 +29,7 @@ export function MyRequestsPage() {
     setError(null);
     try {
       const myRequests = await fetchMyRequests(profile.id);
-      const finishedTripIds = myRequests
-        .filter((r) => r.status === "accepted" && r.trip?.status === "finished")
-        .map((r) => r.trip_id);
-      const ratingsGiven = await fetchRatingsGiven(profile.id, finishedTripIds);
       setRequests(myRequests);
-      setRatedTripIds(new Set(ratingsGiven.map((r) => r.trip_id)));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error al cargar tus solicitudes.");
     } finally {
@@ -93,21 +86,7 @@ export function MyRequestsPage() {
 
 
 
-            {req.status === "accepted" && req.journey_stage === "completed" &&
-              req.trip?.status === "finished" &&
-              profile &&
-              req.driver &&
-              (ratedTripIds.has(req.trip_id) ? (
-                <p className="text-sm text-text-secondary">Ya calificaste a {req.driver.nombre_pila}.</p>
-              ) : (
-                <RatingForm
-                  tripId={req.trip_id}
-                  raterId={profile.id}
-                  ratedId={req.driver.id}
-                  ratedName={req.driver.nombre_pila}
-                  onSubmitted={() => loadData()}
-                />
-              ))}
+            {req.status === "accepted" && req.trip?.status === "finished" && <TripRatings tripId={req.trip_id}/>}
           </Card>
         ))}
       </div>

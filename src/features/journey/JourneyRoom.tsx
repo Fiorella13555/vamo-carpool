@@ -12,6 +12,7 @@ import {finishTrip,respondToRequest,startTrip} from '../trips/api';
 import {useJourneyGps} from './useJourneyGps';
 import {estimateArrival,minutes,projectOnRoute,soles} from './estimate';
 import {orderDriverRequests,type DriverGoal} from '../driver/decision';
+import {TripRatings} from '../ratings/TripRatings';
 import {DriverAdvisor} from '../driver/DriverAdvisor';
 import {JourneyHistoryPanel} from '../history/JourneyHistoryPanel';
 import {useWalkingRoute} from './useWalking';
@@ -95,6 +96,7 @@ function RoomScreen({tripId}:{tripId:string}){
  {data.is_driver&&data.status==='ongoing'&&<Button variant="secondary" disabled={busy} onClick={()=>action(()=>finishTrip(tripId))}>Finalizar viaje</Button>}
  {data.is_driver&&!isFinished&&<Button variant="danger" disabled={busy} onClick={()=>{if(window.confirm('¿Cancelar este viaje para todos los pasajeros?'))void action(()=>cancelJourney(tripId));}}>Cancelar viaje</Button>}
  {data.is_driver&&!isFinished&&<DriverAdvisor room={data} now={now} goal={goal} onGoalChange={setGoal}/>}
+ {data.status==='finished'&&<TripRatings tripId={tripId}/>}
  {isFinished&&(data.is_driver||own?.status==='accepted')&&<JourneyHistoryPanel tripId={tripId}/>}
  {visibleRequests.map(r=><StopCard key={r.id} data={data} request={r} now={now} busy={busy} gpsReady={gps.ready} actionError={error} onAction={action}/>)}
  {isFinished&&<Link className="min-h-11 text-center font-bold text-accent-500" to={data.is_driver?'/conductor/mis-viajes':'/pasajero/mis-solicitudes'}>Ver resumen y calificar</Link>}

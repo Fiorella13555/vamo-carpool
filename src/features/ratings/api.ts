@@ -32,3 +32,15 @@ export async function fetchRatingsGiven(raterId: string, tripIds: string[]): Pro
   if (error) throw error;
   return data ?? [];
 }
+
+export interface RatingTarget {
+  user_id: string;
+  name: string;
+  role: 'driver' | 'passenger';
+  stars: number | null;
+}
+export async function fetchRatingTargets(tripId: string): Promise<RatingTarget[]> {
+  const {data,error}=await supabase.rpc('trip_rating_targets',{p_trip_id:tripId});
+  if(error)throw error;
+  return data??[];
+}
