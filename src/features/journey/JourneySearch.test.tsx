@@ -20,3 +20,32 @@ it('integra AHP/Fuzzy con las opciones nuevas sin pedir una reserva automáticam
  const text=document.body.textContent!;expect(text.indexOf('Menor aporte · Ruta')).toBeLessThan(text.indexOf('Mayor aporte · Ruta'));
  expect(mock.request).not.toHaveBeenCalled();
 });
+function prepareSearch(){
+ render(<MemoryRouter><JourneySearch/></MemoryRouter>);
+ fireEvent.click(screen.getByRole('button',{name:'Punto de inicio'}));
+ fireEvent.click(screen.getByRole('button',{name:'Destino final'}));
+ fireEvent.click(screen.getByRole('button',{name:'Comparar viajes'}));
+}
+it('muestra el aviso de ruta sin viajes antes de las preferencias',async()=>{
+ mock.options.mockResolvedValue([]);prepareSearch();
+ const message=await screen.findByText('Aún no hay viajes para esta ruta');
+ expect(message.closest('[role="status"]')).toBeTruthy();
+ expect(message.compareDocumentPosition(screen.getByText('Tu forma de elegir'))&Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+ expect(mock.request).not.toHaveBeenCalled();
+});
+it('indica que está buscando mientras espera y permite volver a comparar',async()=>{
+ let finish!:(rows:JourneyOption[])=>void;
+ mock.options.mockImplementationOnce(()=>new Promise(resolve=>{finish=resolve;}));prepareSearch();
+ expect(screen.getByRole('status').textContent).toContain('Estamos buscando');
+ expect(screen.getByRole('button',{name:'Buscando viajes…'}).hasAttribute('disabled')).toBe(true);
+ await act(async()=>{finish([]);});
+ expect(screen.getByRole('button',{name:'Comparar viajes'}).hasAttribute('disabled')).toBe(false);
+});
+it('distingue un fallo de consulta de una ruta sin viajes',async()=>{
+ mock.options.mockRejectedValueOnce(new Error('offline'));prepareSearch();
+ expect((await screen.findByRole('alert')).textContent).toContain('No pudimos consultar los viajes');
+ expect(screen.queryByText('Aún no hay viajes para esta ruta')).toBeNull();
+ mock.options.mockResolvedValueOnce([]);
+ await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'Comparar viajes'}));});
+ expect(screen.queryByRole('alert')).toBeNull();expect(screen.getByText('Aún no hay viajes para esta ruta')).toBeTruthy();
+});
