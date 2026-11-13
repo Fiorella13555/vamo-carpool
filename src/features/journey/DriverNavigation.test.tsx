@@ -3,7 +3,7 @@ import {afterEach,beforeEach,expect,it,vi} from 'vitest';
 import type {JourneyRoom} from './types';
 const mock=vi.hoisted(()=>({single:vi.fn(),move:vi.fn()}));
 vi.mock('../../lib/supabase',()=>({supabase:{from:()=>({select:()=>({eq:()=>({single:mock.single})})})}}));
-vi.mock('@vis.gl/react-google-maps',()=>({useMap:()=>({moveCamera:mock.move}),Polyline:()=>null}));
+vi.mock('@vis.gl/react-google-maps',()=>({useMapsLibrary:()=>null,useMap:()=>({moveCamera:mock.move}),Polyline:()=>null}));
 import {DriverNavigation} from './DriverNavigation';
 const now=Date.parse('2026-11-12T12:00:00Z'),position={lat:-12,lng:-76.995,recorded_at:new Date(now).toISOString()};
 const data={trip_id:'t',route:[{lat:-12,lng:-77},{lat:-12,lng:-76.99}],requests:[{id:'r',name:'Ana',status:'accepted',stage:'waiting',pickup_fraction:.6,dropoff_fraction:.9,pickup:{lat:-12,lng:-76.994},dropoff:{lat:-12,lng:-76.991}}]} as JourneyRoom;
