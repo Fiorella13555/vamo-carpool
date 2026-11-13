@@ -25,6 +25,7 @@ function Option({option,origin,destination,onSelect,busy,onMetrics,error}:{optio
  return <Card className="flex flex-col gap-2"><div className="flex justify-between gap-3"><strong>{option.driver_name} · {option.avenida}</strong><strong>Aporte: {soles(option.price)}</strong></div>
  <p className="text-xs">Conductor: {option.standing?.rating_count?`${option.standing.rating_avg?.toFixed(1)} ★ · ${option.standing.rating_count} valoraciones como conductor`:"Sin valoraciones como conductor"}</p>
  <p className="text-sm font-bold">Hora estimada de recojo: {pickupLabel(option)}</p>
+ {option.status==='ongoing'&&option.driver_progress==null&&<p role="status" className="text-sm text-warning">Viaje en curso · ubicación pendiente. Puedes revisar los paraderos; para solicitar necesitamos confirmar que el conductor aún no pasó por tu recojo.</p>}
  <p className="text-sm">Recojo estimado: {minutes(eta?.pickupSeconds)} · Bajada: {minutes(eta?.dropoffSeconds)}</p>
  <p className="text-sm font-bold">Tu destino final: {minutes(eta?.finalSeconds)}</p>
  <p className="text-xs text-text-secondary">Caminarás {pickupWalk?`${Math.ceil(pickupWalk.meters)} m`:'una distancia por confirmar'} hasta el recojo ({minutes(toPickup)}) y {dropoffWalk?`${Math.ceil(dropoffWalk.meters)} m`:'una distancia por confirmar'} desde la bajada a tu destino ({minutes(fromDropoff)}). {option.seats_available} asientos.</p>
@@ -32,7 +33,7 @@ function Option({option,origin,destination,onSelect,busy,onMetrics,error}:{optio
  {!eta&&<p className="text-xs text-warning">Esperando ubicación reciente del conductor para estimar los tiempos.</p>}
  {eta?.canReachPickup===false&&<p className="text-xs text-error">No alcanzarías el punto caminando antes del recojo estimado.</p>}
  <Button disabled={busy} onClick={()=>setPreview(true)}>Visualizar viaje</Button>
- {preview&&<JourneyPreview route={option.route} origin={origin} destination={destination} pickup={option.pickup} dropoff={option.dropoff} price={option.price} busy={busy} error={error} notice={eta?.canReachPickup===false?'No alcanzarías el recojo caminando antes de la hora estimada.':undefined} disabled={eta===null||eta.canReachPickup===false||!['scheduled','ongoing'].includes(option.status)} onClose={()=>setPreview(false)} onConfirm={onSelect}/>}
+ {preview&&<JourneyPreview route={option.route} origin={origin} destination={destination} pickup={option.pickup} dropoff={option.dropoff} price={option.price} busy={busy} error={error} notice={option.status==='ongoing'&&option.driver_progress==null?'Esperando ubicación del conductor para confirmar que aún no pasó por tu recojo.':eta?.canReachPickup===false?'No alcanzarías el recojo caminando antes de la hora estimada.':undefined} disabled={eta===null||eta.canReachPickup===false||!['scheduled','ongoing'].includes(option.status)} onClose={()=>setPreview(false)} onConfirm={onSelect}/>}
  </Card>;
 }
 function Search(){

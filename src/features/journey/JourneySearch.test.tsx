@@ -31,6 +31,15 @@ function prepareSearch(){
  fireEvent.click(screen.getByRole('button',{name:'Destino final'}));
  fireEvent.click(screen.getByRole('button',{name:'Comparar viajes'}));
 }
+it('permite visualizar un viaje iniciado sin GPS pero espera para solicitar',async()=>{
+ const option={trip_id:'ongoing',driver_id:'d',driver_name:'Conductor',avenida:'Ruta en curso',departure_time:'2026-01-01T12:00:00Z',status:'ongoing',seats_available:2,price:4,pickup_fraction:.2,dropoff_fraction:.7,route_duration_seconds:1200,pickup:{lat:-12.1,lng:-77.01},dropoff:{lat:-12.09,lng:-77},route:[],pickup_distance_m:0,dropoff_distance_m:0,driver_progress:null} as JourneyOption;
+ mock.options.mockResolvedValue([option]);prepareSearch();
+ expect(await screen.findByText(/Viaje en curso · ubicación pendiente/)).toBeTruthy();
+ fireEvent.click(screen.getByRole('button',{name:'Visualizar viaje'}));
+ expect(screen.getByRole('dialog',{name:'Visualizar viaje'})).toBeTruthy();
+ expect(screen.getByRole('button',{name:'Elegir y solicitar asiento'}).hasAttribute('disabled')).toBe(true);
+ expect(mock.request).not.toHaveBeenCalled();
+});
 it('muestra el aviso de ruta sin viajes antes de las preferencias',async()=>{
  mock.options.mockResolvedValue([]);prepareSearch();
  const message=await screen.findByText('Aún no hay viajes para esta ruta');
