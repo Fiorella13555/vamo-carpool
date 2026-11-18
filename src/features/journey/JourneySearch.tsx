@@ -53,17 +53,48 @@ function Search(){
  const decision=rankPassengerOptions((results??[]).flatMap(o=>metrics[o.trip_id]?[metrics[o.trip_id]]:[]),matrix);
  const positions=new globalThis.Map(decision.ranking.map((r,i)=>[r.id,{...r,position:i+1}]));
  const ordered=results?scheduledOptions(results,new Date(desiredTime).getTime(),clock,positions):null;
- const version=useRef(0);const hasResults=results!==null;
+ const version=useRef(0);
+ const hasResults=results!==null;
+ const refresh=useRef<(() => void)|null>(null);
+ const [refreshing,setRefreshing]=useState(false);
+ const [refreshError,setRefreshError]=useState<string|null>(null);
  useEffect(()=>{
   if(!hasResults||!origin||!destination||busy)return;
   let alive=true;
+  let pending=false;
   const token=version.current;
-  const timer=setInterval(()=>{void options(origin,destination,maxDistance).then(rows=>{
-   if(alive&&version.current===token){setResults(rows);}
-  }).catch(()=>{if(alive&&version.current===token)setError('No pudimos actualizar las opciones. Vuelve a comparar antes de solicitar.');});},3000);
-  return()=>{alive=false;clearInterval(timer);};
+  const update=async(manual=false)=>{
+   if(pending){
+    if(manual)setRefreshing(true);
+    return;
+   }
+   pending=true;
+   if(manual)setRefreshing(true);
+   try{
+    const rows=await options(origin,destination,maxDistance);
+    if(alive&&version.current===token){
+     setResults(rows);
+     setRefreshError(null);
+    }
+   }catch{
+    if(alive&&version.current===token)setRefreshError('No pudimos actualizar los viajes. Volveremos a intentarlo.');
+   }finally{
+    pending=false;
+    if(alive&&version.current===token)setRefreshing(false);
+   }
+  };
+  const updateVisible=()=>{if(document.visibilityState==='visible')void update();};
+  refresh.current=()=>{void update(true);};
+  const timer=setInterval(updateVisible,3000);
+  document.addEventListener('visibilitychange',updateVisible);
+  return()=>{
+   alive=false;
+   refresh.current=null;
+   clearInterval(timer);
+   document.removeEventListener('visibilitychange',updateVisible);
+  };
  },[hasResults,origin,destination,busy,maxDistance]);
- const reset=()=>{version.current++;setResults(null);setMetrics({});setError(null);setBusy(false);setSearching(false);};
+ const reset=()=>{version.current++;setResults(null);setMetrics({});setError(null);setBusy(false);setSearching(false);setRefreshing(false);setRefreshError(null);};
  function choose(point:LatLng,target:'origin'|'destination'){if(!isInLima(point)){setError('Elige un punto dentro de Lima Metropolitana.');return;}reset();if(target==='origin')setOrigin(point);else setDestination(point);setPick(null);}
  async function search(){
   if(!origin||!destination)return;
@@ -73,7 +104,7 @@ function Search(){
   catch(e){if(token===version.current)setError(e instanceof Error?`No pudimos consultar los viajes. ${e.message}`:'No pudimos consultar los viajes. Intenta comparar nuevamente.');}
   finally{if(token===version.current){setBusy(false);setSearching(false);setCompletedSearch(value=>value+1);}}
  }
- async function select(option:JourneyOption){if(!origin||!destination)return;setBusy(true);setError(null);try{await request(option,origin,destination,maxDistance);navigate(`/viaje/${option.trip_id}`);}catch(e){setError(e instanceof Error?e.message:'No pudimos solicitar el asiento.');if(e instanceof Error&&/ya salió|ya no está disponible|cerró sus solicitudes/i.test(e.message))setResults(previous=>previous?.filter(row=>row.trip_id!==option.trip_id)??null);}finally{setBusy(false);}}
+ async function select(option:JourneyOption){if(!origin||!destination)return;setBusy(true);setRefreshing(false);setError(null);try{await request(option,origin,destination,maxDistance);navigate(`/viaje/${option.trip_id}`);}catch(e){setError(e instanceof Error?e.message:'No pudimos solicitar el asiento.');if(e instanceof Error&&/ya salió|ya no está disponible|cerró sus solicitudes/i.test(e.message))setResults(previous=>previous?.filter(row=>row.trip_id!==option.trip_id)??null);}finally{setBusy(false);}}
  return <main className="relative h-[calc(100dvh-60px)] overflow-hidden"><Map defaultCenter={{lat:-12.09,lng:-77.02}} defaultZoom={12} mapId={import.meta.env.VITE_GOOGLE_MAPS_MAP_ID||'DEMO_MAP_ID'} disableDefaultUI className="h-full w-full" onClick={e=>{if(pick&&e.detail.latLng)choose(e.detail.latLng,pick);}}>
  <FitJourney origin={origin} destination={destination}/>{origin&&<AdvancedMarker position={origin} title="Tu inicio"/>}{destination&&<AdvancedMarker position={destination} title="Tu destino final"/>}
 
@@ -91,12 +122,15 @@ function Search(){
  {[100,150,250,500,750,1000,1500,2000].map(m=><option key={m} value={m}>{m} metros</option>)}
  </select></label>
  <p className="text-xs text-text-secondary">Máximo por cada extremo, medido en distancia directa a la ruta. En cada opción verás cuánto caminarías por calles; esa distancia puede ser mayor.</p>
- <Button disabled={!origin||!destination||busy} loading={searching} onClick={search}>{searching?'Buscando viajes…':'Comparar viajes'}</Button>
+ {hasResults
+  ? <Button disabled={busy||refreshing} loading={refreshing} onClick={()=>refresh.current?.()}>{refreshing?'Actualizando viajes…':'Actualizar viajes'}</Button>
+  : <Button disabled={!origin||!destination||busy} loading={searching} onClick={search}>{searching?'Buscando viajes…':'Comparar viajes'}</Button>}
  {!origin||!destination?<p className="text-xs text-text-secondary">Selecciona una sugerencia de origen y destino, o elige ambos puntos en el mapa.</p>:null}
  <div ref={feedback} tabIndex={-1} className="rounded-lg focus-visible:outline-2 focus-visible:outline-accent-700">
  {searching&&<p role="status" className="rounded-lg bg-bg-sunken p-4 text-sm">Estamos buscando viajes para tu ruta…</p>}
+ {refreshError&&<p role="status" className="text-sm text-warning">{refreshError}</p>}
  {error&&<p role="alert" className="rounded-lg bg-error-soft p-4 text-sm text-error">{error}</p>}
- {!searching&&!error&&ordered?.length===0&&<div role="status" className="rounded-lg bg-bg-sunken p-4"><h2 className="font-extrabold text-navy-900">Aún no hay viajes para esta ruta</h2><p className="mt-1 text-sm text-text-secondary">Prueba con otro punto de inicio o destino, o vuelve a buscar más tarde.</p></div>}
+ {!searching&&!error&&ordered?.length===0&&<div role="status" className="rounded-lg bg-bg-sunken p-4"><h2 className="font-extrabold text-navy-900">Aún no hay viajes para esta ruta</h2><p className="mt-1 text-sm text-text-secondary">Si se publica un viaje compatible, aparecerá aquí automáticamente.</p></div>}
  {!searching&&!error&&!!ordered?.length&&<p role="status" className="rounded-lg bg-bg-sunken p-4 text-sm font-bold">{ordered!.length===1?'Encontramos 1 viaje para ti':`Encontramos ${ordered!.length} viajes para ti`}</p>}
  </div>
  <PassengerPreferences matrix={matrix} onChange={setMatrix}/>
