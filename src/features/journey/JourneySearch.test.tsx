@@ -8,7 +8,7 @@ vi.mock('./useWalking',()=>({useWalkingRoute:()=>({seconds:30,meters:240})}));
 vi.mock('../../components/LocationSearch',()=>({FitJourney:()=>null,LocationSearch:({label,onSelect}:{label:string;onSelect:(p:{lat:number;lng:number})=>void})=><button onClick={()=>onSelect({lat:-12.1,lng:-77.01})}>{label}</button>}));
 vi.mock('@vis.gl/react-google-maps',()=>({APIProvider:({children}:{children:React.ReactNode})=><>{children}</>,Map:({children}:{children:React.ReactNode})=><div>{children}</div>,AdvancedMarker:()=>null,Polyline:()=>null}));
 import {JourneySearch} from './JourneySearch';
-afterEach(()=>{cleanup();vi.restoreAllMocks();vi.clearAllMocks();});
+afterEach(()=>{cleanup();vi.useRealTimers();vi.restoreAllMocks();vi.clearAllMocks();});
 it('integra AHP/Fuzzy con las opciones nuevas sin pedir una reserva automáticamente',async()=>{
  const option:JourneyOption={trip_id:'a',driver_id:'d',driver_name:'Mayor aporte',avenida:'Ruta',departure_time:'2099-01-01T12:00:00Z',status:'scheduled',seats_available:2,price:9,pickup_fraction:.2,dropoff_fraction:.7,route_duration_seconds:1200,pickup:{lat:-12.1,lng:-77.01},dropoff:{lat:-12.09,lng:-77},route:[],pickup_distance_m:0,dropoff_distance_m:0,driver_progress:null};
  mock.options.mockResolvedValue([option,{...option,trip_id:'b',driver_name:'Menor aporte',price:2}]);
@@ -47,13 +47,13 @@ it('muestra el aviso de ruta sin viajes antes de las preferencias',async()=>{
  expect(message.compareDocumentPosition(screen.getByText('Tu forma de elegir'))&Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
  expect(mock.request).not.toHaveBeenCalled();
 });
-it('indica que está buscando mientras espera y permite volver a comparar',async()=>{
+it('indica que está buscando mientras espera y permite actualizar los resultados',async()=>{
  let finish!:(rows:JourneyOption[])=>void;
  mock.options.mockImplementationOnce(()=>new Promise(resolve=>{finish=resolve;}));prepareSearch();
  expect(screen.getByRole('status').textContent).toContain('Estamos buscando');
  expect(screen.getByRole('button',{name:'Buscando viajes…'}).hasAttribute('disabled')).toBe(true);
  await act(async()=>{finish([]);});
- expect(screen.getByRole('button',{name:'Comparar viajes'}).hasAttribute('disabled')).toBe(false);
+ expect(screen.getByRole('button',{name:'Actualizar viajes'}).hasAttribute('disabled')).toBe(false);
 });
 it('distingue un fallo de consulta de una ruta sin viajes',async()=>{
  mock.options.mockRejectedValueOnce(new Error('offline'));prepareSearch();
@@ -70,4 +70,23 @@ it('envía la distancia elegida y limpia resultados al cambiarla',async()=>{
  expect(screen.queryByText('Aún no hay viajes para esta ruta')).toBeNull();
  await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'Comparar viajes'}));});
  expect(mock.options).toHaveBeenLastCalledWith(expect.anything(),expect.anything(),500);
+});
+
+it('incorpora un viaje compatible automáticamente después de una búsqueda vacía y permite actualizar',async()=>{
+ vi.useFakeTimers();
+ mock.options.mockResolvedValue([]);
+ prepareSearch();
+ await act(async()=>{});
+ expect(screen.getByText('Aún no hay viajes para esta ruta')).toBeTruthy();
+
+ const option:JourneyOption={trip_id:'nuevo',driver_id:'d',driver_name:'Nuevo conductor',avenida:'Ruta',departure_time:'2099-01-01T12:00:00Z',status:'scheduled',seats_available:2,price:4,pickup_fraction:.2,dropoff_fraction:.7,route_duration_seconds:1200,pickup:{lat:-12.1,lng:-77.01},dropoff:{lat:-12.09,lng:-77},route:[],pickup_distance_m:0,dropoff_distance_m:0,driver_progress:null};
+ mock.options.mockResolvedValue([option]);
+ await act(async()=>{await vi.advanceTimersByTimeAsync(3000);});
+ expect(screen.getByText('Nuevo conductor · Ruta')).toBeTruthy();
+
+ mock.options.mockResolvedValue([]);
+ await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'Actualizar viajes'}));});
+ expect(screen.getByText('Aún no hay viajes para esta ruta')).toBeTruthy();
+ expect(mock.options).toHaveBeenCalledTimes(3);
+ expect(mock.request).not.toHaveBeenCalled();
 });
