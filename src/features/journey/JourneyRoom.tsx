@@ -1,6 +1,6 @@
 import {useEffect,useRef,useState} from 'react';
 import {APIProvider,Map,AdvancedMarker,Polyline} from '@vis.gl/react-google-maps';
-import {Car,MapPin,Navigation2} from 'lucide-react';
+import {Bell,Car,MapPin,Navigation2} from 'lucide-react';
 import {Link,useParams} from 'react-router-dom';
 import {useAuth} from '../auth/AuthContext';
 import {Button,Card} from '../../components/ui';
@@ -40,9 +40,9 @@ function StopCard({data,request,now,onAction,busy,gpsReady,actionError}:{data:Ro
 
  const eta=request.pickup_fraction!==null&&request.dropoff_fraction!==null?estimateArrival({durationSeconds:data.route_duration_seconds,departureTime:data.departure_time,ongoing:data.status==='ongoing',progress:live?progress:null,pickup:request.pickup_fraction,dropoff:request.dropoff_fraction,walkToPickup:walkPickup,walkFromDropoff:walkEnd,now,pickupStopSeconds:request.pickup_stop_seconds,dropoffStopSeconds:request.dropoff_stop_seconds,onboard:request.stage==='onboard'}):null;
  const selectedEnd=eta?.finalSeconds;
- return <Card role="region" aria-label={`Solicitud de ${request.name}`} className="flex flex-col gap-2">
+ return <Card id={`solicitud-${request.id}`} tabIndex={-1} role="region" aria-label={`Solicitud de ${request.name}`} className="flex scroll-mt-16 flex-col gap-2">
  <div className="flex justify-between gap-2"><strong>{data.is_driver?request.name:'Tu asiento'}</strong><strong>Aporte: {soles(request.price)}</strong></div>
- <p className="text-sm">{request.closure_reason==='departed'?'El viaje ya salió. Tu solicitud no fue aceptada a tiempo.':request.status==='pending'?'Esperando aceptación':request.status==='rejected'?'Solicitud rechazada':request.status==='cancelled'?'Solicitud cancelada':request.stage==='completed'?'Pasajero en su bajada':request.stage==='onboard'?'Pasajero a bordo':'Asiento confirmado'}</p>
+ <p className="text-sm">{request.closure_reason==='departed'?'El viaje ya salió. Tu solicitud no fue aceptada a tiempo.':request.status==='pending'?'Esperando aceptación':request.status==='rejected'?'Solicitud rechazada':request.closure_reason==='driver_cancelled_pickup'?'El conductor canceló el recojo':request.status==='cancelled'?'Solicitud cancelada':request.stage==='completed'?'Pasajero en su bajada':request.stage==='onboard'?'Pasajero a bordo':'Asiento confirmado'}</p>
  {['pending','accepted'].includes(request.status)&&request.stage!=='completed'&&!['finished','cancelled'].includes(data.status)&&<>
  {request.stage==='waiting'&&<p>Conductor al recojo: {minutes(eta?.pickupSeconds)} · Caminata al recojo: {minutes(walkPickup)}</p>}
  <p>Bajada sobre la ruta: {minutes(eta?.dropoffSeconds)}</p><p className="font-bold">Destino final del pasajero: {minutes(selectedEnd)}</p>
@@ -53,6 +53,10 @@ function StopCard({data,request,now,onAction,busy,gpsReady,actionError}:{data:Ro
  {data.is_driver&&['scheduled','ongoing'].includes(data.status)&&request.status==='pending'&&<div className="flex gap-2"><Button disabled={busy} onClick={()=>setPreview(true)}>Visualizar solicitud</Button><Button variant="secondary" disabled={busy} onClick={()=>onAction(()=>respondToRequest(request.id,'rejected'))}>Rechazar</Button></div>}
  {preview&&data.is_driver&&['scheduled','ongoing'].includes(data.status)&&request.status==='pending'&&<JourneyPreview route={data.route} origin={request.origin} destination={request.destination} pickup={request.pickup} dropoff={request.dropoff} price={request.price} driver busy={busy} error={actionError} notice={!gpsReady?'Activa tu ubicación para aceptar al pasajero.':undefined} disabled={!gpsReady} onClose={()=>setPreview(false)} onConfirm={()=>onAction(()=>respondToRequest(request.id,'accepted'))}/>}
  {data.is_driver&&data.status==='ongoing'&&request.status==='accepted'&&request.stage!=='completed'&&<Button disabled={busy||!gpsReady} onClick={()=>onAction(()=>stage(request.id,request.stage==='waiting'?'onboard':'completed'))}>{request.stage==='waiting'?'Confirmar recojo':'Confirmar bajada'}</Button>}
+ {data.is_driver&&['scheduled','ongoing'].includes(data.status)&&request.status==='accepted'&&request.stage==='waiting'&&
+ <Button variant="secondary" disabled={busy} onClick={()=>{
+  if(window.confirm(`¿Cancelar el recojo de ${request.name}? Su asiento quedará disponible.`))onAction(()=>cancelJourney(data.trip_id,request.id));
+ }}>Cancelar recojo</Button>}
  {!data.is_driver&&['scheduled','ongoing'].includes(data.status)&&['pending','accepted'].includes(request.status)&&request.stage!=='completed'&&<Button variant="secondary" disabled={busy} onClick={()=>{if(window.confirm('¿Cancelar tu participación en este viaje? Se liberará tu asiento.'))onAction(()=>cancelJourney(data.trip_id,request.id));}}>Cancelar mi viaje</Button>}
  </Card>;
 }
@@ -78,9 +82,18 @@ function RoomScreen({tripId}:{tripId:string}){
  const visibleRequests=data.is_driver?orderDriverRequests(data.requests.filter(r=>['pending','accepted'].includes(r.status)&&r.stage!=='completed'),goal):own?[own]:[];
  const isFinished=['finished','cancelled'].includes(data.status);
  const driving=data.is_driver&&data.status==='ongoing';
+ const pending=driving?visibleRequests.filter(request=>request.status==='pending'):[];
  const driverPosition=driving&&gps.reading?{lat:gps.reading.lat,lng:gps.reading.lng,recorded_at:gps.reading.recordedAt}:data.driver_location;
  return <main className="flex min-h-dvh flex-col bg-bg-page pb-6">
  <header className="safe-x mx-auto flex w-full max-w-3xl items-center justify-between gap-3 py-4 text-text-on-dark"><div><p className="text-xs text-accent-500">Vamo · tu viaje</p><h1 className="text-lg font-extrabold">{data.is_driver?'Tu ruta compartida':`Vamos con ${data.driver_name}`}</h1><p className="text-xs">{data.avenida}</p></div><Link to="/" className="text-sm">Inicio</Link></header>
+ {driving&&<div className="sticky top-0 z-20 mx-auto w-full max-w-3xl px-3">
+ <div role="status" aria-atomic="true">
+ {pending.length>0&&<div className="flex items-center justify-between gap-2 rounded-xl bg-accent-500 px-3 text-sm font-extrabold text-navy-900 shadow-lg">
+ <span className="flex items-center gap-2"><Bell size={19} aria-hidden="true"/>{pending.length===1?'Nueva solicitud de viaje':`${pending.length} solicitudes de viaje pendientes`}</span>
+ <a href={`#solicitud-${pending[0].id}`} className="flex min-h-11 shrink-0 items-center px-2 underline">Revisar</a>
+ </div>}
+ </div>
+ </div>}
  {!isFinished&&<div className={driving?"relative h-[76dvh] min-h-[32rem]":"relative h-[43dvh] min-h-64"}><Map className="h-full w-full" defaultCenter={data.route[0]??{lat:-12.09,lng:-77.02}} defaultZoom={13} mapId={import.meta.env.VITE_GOOGLE_MAPS_MAP_ID||'DEMO_MAP_ID'} disableDefaultUI renderingType={driving?"VECTOR":undefined}>
  {(!driving||driverOverview)&&<FitJourney origin={data.route[0]??null} destination={data.route[data.route.length-1]??null} route={data.route} overlay={false}/>}
  <Polyline path={data.route} strokeColor="#0B2345" strokeWeight={5}/>
@@ -93,7 +106,7 @@ function RoomScreen({tripId}:{tripId:string}){
  </div>)}
  </Map></div>}
  <section className="safe-x mx-auto flex w-full max-w-3xl flex-col gap-3 pt-4">
- <Card><p role="status" className="font-extrabold">{own?.closure_reason==='departed'?'El viaje ya salió. Ya no se puede solicitar un asiento.':data.status==='finished'?'Viaje finalizado':data.status==='cancelled'?'Viaje cancelado':own?.status==='pending'?'Tu solicitud está esperando al conductor':own?.status==='rejected'?'El conductor rechazó la solicitud':own?.status==='cancelled'?'Tu solicitud fue cancelada':data.status==='ongoing'?'Viaje en curso':data.is_driver?'Esperando el inicio del viaje':'Confirmado · esperando que el conductor inicie'}</p>
+ <Card><p role="status" className="font-extrabold">{own?.closure_reason==='departed'?'El viaje ya salió. Ya no se puede solicitar un asiento.':data.status==='finished'?'Viaje finalizado':data.status==='cancelled'?'Viaje cancelado':own?.status==='pending'?'Tu solicitud está esperando al conductor':own?.status==='rejected'?'El conductor rechazó la solicitud':own?.closure_reason==='driver_cancelled_pickup'?'El conductor canceló tu recojo':own?.status==='cancelled'?'Tu solicitud fue cancelada':data.status==='ongoing'?'Viaje en curso':data.is_driver?'Esperando el inicio del viaje':'Confirmado · esperando que el conductor inicie'}</p>
  {active&&<><p className="mt-2 text-sm">{gps.ready?'Ubicación compartida':'Activa tu ubicación para continuar'}. Mantén Vamo visible y el GPS preciso activado en ambos teléfonos. Al cambiar de app o bloquear el celular, el navegador puede pausar la ubicación; al volver a Vamo se reconecta automáticamente. Se guardan muestras del recorrido del vehículo y paradas para el historial del viaje.</p>{gps.error&&<p role="alert" className="mt-2 text-sm text-error">{gps.error}</p>}{!gps.ready&&<Button variant="secondary" onClick={gps.retry}>Reintentar ubicación</Button>}</>}
  <p className="mt-2 text-xs text-text-secondary">Los tiempos son estimaciones sobre la ruta publicada, con 30 segundos previstos por parada pendiente. No incluyen tráfico en vivo ni cambios imprevistos. La caminata se consulta por separado en Maps.</p>
  </Card>

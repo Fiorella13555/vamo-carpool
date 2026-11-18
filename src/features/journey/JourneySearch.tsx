@@ -20,8 +20,9 @@ function Option({option,origin,destination,onSelect,busy,onMetrics,error}:{optio
  const pickupWalk=useWalkingRoute(origin,option.pickup),dropoffWalk=useWalkingRoute(option.dropoff,destination);
  const toPickup=pickupWalk?.seconds??null,fromDropoff=dropoffWalk?.seconds??null;
  const eta=estimateArrival({durationSeconds:option.route_duration_seconds,departureTime:option.departure_time,ongoing:option.status==='ongoing',progress:option.driver_progress,pickup:option.pickup_fraction,dropoff:option.dropoff_fraction,walkToPickup:toPickup,walkFromDropoff:fromDropoff,now});
- const finalSeconds=eta?.finalSeconds,reachable=eta?.canReachPickup;
- useEffect(()=>{onMetrics(option.trip_id,toPickup!==null&&fromDropoff!==null&&finalSeconds!=null&&reachable!==false?{id:option.trip_id,walkingSeconds:toPickup+fromDropoff,arrivalSeconds:finalSeconds,price:option.price,rating:option.standing?.rating_avg??null,ratingCount:option.standing?.rating_count??0}:null);},[option.trip_id,option.price,option.standing?.rating_avg,option.standing?.rating_count,toPickup,fromDropoff,finalSeconds,reachable,onMetrics]);
+ const finalSeconds=eta?.finalSeconds;
+ const walkingNotice=eta?.canReachPickup===false?'Puede que no llegues a tiempo caminando. Si no estás en el punto de recojo, el conductor puede cancelar tu recojo.':undefined;
+ useEffect(()=>{onMetrics(option.trip_id,toPickup!==null&&fromDropoff!==null&&finalSeconds!=null?{id:option.trip_id,walkingSeconds:toPickup+fromDropoff,arrivalSeconds:finalSeconds,price:option.price,rating:option.standing?.rating_avg??null,ratingCount:option.standing?.rating_count??0}:null);},[option.trip_id,option.price,option.standing?.rating_avg,option.standing?.rating_count,toPickup,fromDropoff,finalSeconds,onMetrics]);
  return <Card className="flex flex-col gap-2"><div className="flex justify-between gap-3"><strong>{option.driver_name} · {option.avenida}</strong><strong>Aporte: {soles(option.price)}</strong></div>
  <p className="text-xs">Conductor: {option.standing?.rating_count?`${option.standing.rating_avg?.toFixed(1)} ★ · ${option.standing.rating_count} valoraciones como conductor`:"Sin valoraciones como conductor"}</p>
  <p className="text-sm font-bold">Hora estimada de recojo: {pickupLabel(option)}</p>
@@ -31,9 +32,9 @@ function Option({option,origin,destination,onSelect,busy,onMetrics,error}:{optio
  <p className="text-xs text-text-secondary">Caminarás {pickupWalk?`${Math.ceil(pickupWalk.meters)} m`:'una distancia por confirmar'} hasta el recojo ({minutes(toPickup)}) y {dropoffWalk?`${Math.ceil(dropoffWalk.meters)} m`:'una distancia por confirmar'} desde la bajada a tu destino ({minutes(fromDropoff)}). {option.seats_available} asientos.</p>
  <p className="text-xs text-text-secondary">La ruta del conductor se mantiene. El aporte corresponde al tramo compartido; no se cobra desde la app.</p>
  {!eta&&<p className="text-xs text-warning">Esperando ubicación reciente del conductor para estimar los tiempos.</p>}
- {eta?.canReachPickup===false&&<p className="text-xs text-error">No alcanzarías el punto caminando antes del recojo estimado.</p>}
+ {walkingNotice&&<p className="text-xs text-warning">{walkingNotice}</p>}
  <Button disabled={busy} onClick={()=>setPreview(true)}>Visualizar viaje</Button>
- {preview&&<JourneyPreview route={option.route} origin={origin} destination={destination} pickup={option.pickup} dropoff={option.dropoff} price={option.price} busy={busy} error={error} notice={option.status==='ongoing'&&option.driver_progress==null?'Esperando ubicación del conductor para confirmar que aún no pasó por tu recojo.':eta?.canReachPickup===false?'No alcanzarías el recojo caminando antes de la hora estimada.':undefined} disabled={eta===null||eta.canReachPickup===false||!['scheduled','ongoing'].includes(option.status)} onClose={()=>setPreview(false)} onConfirm={onSelect}/>}
+ {preview&&<JourneyPreview route={option.route} origin={origin} destination={destination} pickup={option.pickup} dropoff={option.dropoff} price={option.price} busy={busy} error={error} notice={option.status==='ongoing'&&option.driver_progress==null?'Esperando ubicación del conductor para confirmar que aún no pasó por tu recojo.':walkingNotice} disabled={eta===null||!['scheduled','ongoing'].includes(option.status)} onClose={()=>setPreview(false)} onConfirm={onSelect}/>}
  </Card>;
 }
 function Search(){
