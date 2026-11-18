@@ -19,6 +19,7 @@ import {useWalkingRoute} from './useWalking';
 import {latestOwnRequest,activeStops} from './participants';
 import {JourneyPreview} from './JourneyPreview';
 
+import {DeviationCheckin} from './DeviationCheckin';
 import {DriverNavigation} from './DriverNavigation';
 
 function MovingCar({position,navigating=false}:{position:Position;navigating?:boolean}){
@@ -73,8 +74,6 @@ function RoomScreen({tripId}:{tripId:string}){
  useEffect(()=>{const timer=window.setInterval(()=>setNow(Date.now()),1000);return()=>window.clearInterval(timer);},[]);
  async function action(work:()=>Promise<unknown>){setBusy(true);try{await work();await refreshRef.current();}catch(e){setError(e instanceof Error?e.message:typeof e==='object'&&e!==null&&'message' in e?String(e.message):'No pudimos completar la acción.');}finally{setBusy(false);}}
  if(!data)return <main className="vamo-page"><p role="status">{error??'Abriendo tu viaje…'}</p><Link to="/">Volver al inicio</Link></main>;
- const confirmed=data.requests.filter(r=>r.status==='accepted'&&r.stage!=='completed');
- const participantsReady=confirmed.every(r=>r.gps_ready);
  const visibleRequests=data.is_driver?orderDriverRequests(data.requests.filter(r=>['pending','accepted'].includes(r.status)&&r.stage!=='completed'),goal):own?[own]:[];
  const isFinished=['finished','cancelled'].includes(data.status);
  const driving=data.is_driver&&data.status==='ongoing';
@@ -98,7 +97,9 @@ function RoomScreen({tripId}:{tripId:string}){
  <p className="mt-2 text-xs text-text-secondary">Los tiempos son estimaciones sobre la ruta publicada, con 30 segundos previstos por parada pendiente. No incluyen tráfico en vivo ni cambios imprevistos. La caminata se consulta por separado en Maps.</p>
  </Card>
  {error&&<p role="alert" className="rounded-lg bg-error-soft p-3 text-sm text-error">{error}</p>}
- {data.is_driver&&data.status==='scheduled'&&<><p className="text-sm text-text-on-dark-muted">{participantsReady?'Pasajeros confirmados con GPS activo.':'Esperando GPS de todos los pasajeros confirmados.'}</p><Button loading={busy} disabled={busy||!gps.ready||!participantsReady} onClick={()=>action(async()=>{await startTrip(tripId);})}>Iniciar viaje</Button></>}
+ {data.is_driver&&data.status==='scheduled'&&<><p className="text-sm text-text-on-dark-muted">Puedes iniciar sin esperar el GPS de los pasajeros. La ubicación se verifica para confirmar las paradas.</p><Button loading={busy} disabled={busy} onClick={()=>action(async()=>{await startTrip(tripId);})}>Iniciar viaje</Button></>}
+ {data.is_driver&&!isFinished&&<p role="note" className="rounded-lg bg-bg-surface p-3 text-sm">Puedes cambiar de camino, pero debes pasar por los puntos de subida y bajada aceptados. Los desvíos no cambian los paraderos automáticamente.</p>}
+ {data.status==='ongoing'&&<DeviationCheckin tripId={tripId} driver={data.is_driver} names={Object.fromEntries(data.requests.map(r=>[r.id,r.name]))}/>}
  {data.is_driver&&data.status==='ongoing'&&<Button variant="secondary" disabled={busy} onClick={()=>action(()=>finishTrip(tripId))}>Finalizar viaje</Button>}
  {data.is_driver&&!isFinished&&<Button variant="danger" disabled={busy} onClick={()=>{if(window.confirm('¿Cancelar este viaje para todos los pasajeros?'))void action(()=>cancelJourney(tripId));}}>Cancelar viaje</Button>}
  {data.is_driver&&!isFinished&&<DriverAdvisor room={data} now={now} goal={goal} onGoalChange={setGoal}/>}

@@ -17,6 +17,8 @@ import {extractNavigationSteps,type NavigationStep} from '../journey/navigation'
 
 const LIMA_CENTER = { lat: -12.09, lng: -77.02 };
 
+type RouteChoice = {path:LatLng[];seconds:number;steps:NavigationStep[];label:string;meters:number};
+
 type PickMode = "origin" | "destination" | null;
 
 function PublishTripForm() {
@@ -25,6 +27,8 @@ function PublishTripForm() {
   const routesLibrary = useMapsLibrary("routes");
 
   const routeVersion = useRef(0);
+  const [choices,setChoices]=useState<RouteChoice[]>([]);
+  const [selectedChoice,setSelectedChoice]=useState(0);
   const [navigationSteps,setNavigationSteps]=useState<NavigationStep[]>([]);
   const [vehicle, setVehicle] = useState<Vehicle | null | undefined>(undefined);
   const [origin, setOrigin] = useState<LatLng | null>(null);
@@ -52,10 +56,14 @@ function PublishTripForm() {
     }
     setError(null);
     routeVersion.current++;
-    setRoute(null);
+    setRoute(null);setChoices([]);
     if (pickMode === "origin") setOrigin(latLng);
     else setDestination(latLng);
     setPickMode(null);
+  }
+
+  function chooseRoute(choice:RouteChoice,index:number){
+    setSelectedChoice(index);setRoute(choice.path);setRouteSeconds(choice.seconds);setNavigationSteps(choice.steps);
   }
 
   async function handleCalculateRoute() {
@@ -71,15 +79,18 @@ function PublishTripForm() {
         origin,
         destination,
         travelMode: google.maps.TravelMode.DRIVING,
-        fields: ["path", "durationMillis", "legs"],
+        computeAlternativeRoutes: true,
+        fields: ["path", "durationMillis", "legs", "description", "distanceMeters"],
         language: "es",
       });
-      const path = result.routes?.[0]?.path?.map((p) => ({ lat: p.lat, lng: p.lng }));
-      if (!path || path.length < 2) {
-        setError("No se pudo calcular una ruta entre esos dos puntos.");
-        return;
-      }
-      if (version === routeVersion.current) {setNavigationSteps(extractNavigationSteps(result.routes?.[0]?.legs??[],path));setRoute(path);setRouteSeconds((result.routes?.[0]?.durationMillis ?? 0)/1000 || null);}
+      const available:RouteChoice[]=(result.routes??[]).flatMap((candidate,index)=>{
+        const path=candidate.path?.map(p=>({lat:p.lat,lng:p.lng}));
+        const seconds=(candidate.durationMillis??0)/1000;
+        return path&&path.length>=2&&seconds>0?[{path,seconds,steps:extractNavigationSteps(candidate.legs??[],path),label:candidate.description||`Ruta ${index+1}`,meters:candidate.distanceMeters??0}]:[];
+      });
+      if(version!==routeVersion.current)return;
+      if(!available.length){setError("No se pudo calcular una ruta entre esos dos puntos.");return;}
+      setChoices(available);chooseRoute(available[0],0);
     } catch {
       setError("No se pudo calcular la ruta. Intenta con otros puntos.");
     } finally {
@@ -177,6 +188,7 @@ function PublishTripForm() {
         <FitJourney origin={origin} destination={destination} route={route} overlay={false}/>
         {origin && <AdvancedMarker position={origin} title="Origen" />}
         {destination && <AdvancedMarker position={destination} title="Destino" />}
+        {choices.map((choice,i)=>i!==selectedChoice&&<Polyline key={i} path={choice.path} strokeColor="#94A3B8" strokeWeight={3}/>)}
         {route && <Polyline path={route} strokeColor="#1D4ED8" strokeWeight={4} />}
       </Map>
       </div>
@@ -190,8 +202,8 @@ function PublishTripForm() {
         </div>
 
         {pickMode && <p role="status" className="text-sm font-bold text-text-primary">Toca el mapa para elegir {pickMode === "origin" ? "el origen" : "el destino"}. <button type="button" onClick={()=>setPickMode(null)}>Cancelar</button></p>}
-        <LocationSearch label="Origen" point={origin} onSelect={point=>{routeVersion.current++;setOrigin(point);setRoute(null);setPickMode(null);}} onClear={()=>{routeVersion.current++;setOrigin(null);setRoute(null);}} onMap={()=>setPickMode("origin")}/>
-        <LocationSearch label="Destino" point={destination} onSelect={point=>{routeVersion.current++;setDestination(point);setRoute(null);setPickMode(null);}} onClear={()=>{routeVersion.current++;setDestination(null);setRoute(null);}} onMap={()=>setPickMode("destination")}/>
+        <LocationSearch label="Origen" point={origin} onSelect={point=>{routeVersion.current++;setOrigin(point);setRoute(null);setChoices([]);setPickMode(null);}} onClear={()=>{routeVersion.current++;setOrigin(null);setRoute(null);setChoices([]);}} onMap={()=>setPickMode("origin")}/>
+        <LocationSearch label="Destino" point={destination} onSelect={point=>{routeVersion.current++;setDestination(point);setRoute(null);setChoices([]);setPickMode(null);}} onClear={()=>{routeVersion.current++;setDestination(null);setRoute(null);setChoices([]);}} onMap={()=>setPickMode("destination")}/>
         <div className="flex flex-wrap gap-2">
           <Button
             type="button"
@@ -203,6 +215,12 @@ function PublishTripForm() {
             Calcular ruta
           </Button>
         </div>
+
+        {choices.length>0&&<fieldset className="flex flex-col gap-2"><legend className="font-bold">Escoge tu ruta</legend>
+          {choices.map((choice,i)=><label key={i} className="flex cursor-pointer items-center gap-3 rounded-lg border border-border p-3"><input type="radio" name="route" checked={selectedChoice===i} onChange={()=>chooseRoute(choice,i)}/><span><strong>{choice.label}</strong><br/>{Math.ceil(choice.seconds/60)} min estimados{choice.meters>0?` · ${(choice.meters/1000).toFixed(1)} km`:''}</span></label>)}
+          {choices.length===1&&<p className="text-sm">Maps solo encontró una ruta disponible para estos puntos.</p>}
+        </fieldset>}
+        <p role="note" className="rounded-lg bg-bg-sunken p-3 text-sm">Puedes cambiar de camino, pero debes pasar por todos los puntos de subida y bajada ya aceptados. Un desvío no cambia esos paraderos automáticamente.</p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <p className="rounded-lg bg-bg-sunken p-3 text-sm text-text-secondary">Vamo calcula el aporte de cada pasajero según su tramo compartido. Verás el monto al recibir su solicitud.</p>

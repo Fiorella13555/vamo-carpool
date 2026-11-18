@@ -18,6 +18,7 @@ export function navigationRequests(requests:JourneyRequest[],route:LatLng[]):Jou
 export function useRerouting(data:JourneyRoom,position:Position|null,now:number,ready:boolean){
  const library=useMapsLibrary('routes');
  const [result,setResult]=useState<{key:string;route:LatLng[];steps:NavigationStep[]}|null>(null);
+ const [deviation,setDeviation]=useState(0);
  const [status,setStatus]=useState<'idle'|'loading'|'error'>('idle');
  const stops=remainingStops(data.requests),destination=data.route.at(-1);
  const key=JSON.stringify([data.trip_id,data.route,stops]);
@@ -34,6 +35,7 @@ export function useRerouting(data:JourneyRoom,position:Position|null,now:number,
   c.deviations++;
   // Two distinct GPS fixes avoid recalculating on a single noisy reading.
   if(c.deviations<2||c.pending||now-c.lastAttempt<30000)return;
+  setDeviation(value=>value+1);
   c.lastAttempt=now;c.pending=true;const version=++c.version;setStatus('loading');
   void library.Route.computeRoutes({origin:{lat:position.lat,lng:position.lng},destination,
    intermediates:stops.map(s=>({location:s.point})),optimizeWaypointOrder:false,
@@ -48,5 +50,5 @@ export function useRerouting(data:JourneyRoom,position:Position|null,now:number,
   }).catch(()=>{if(c.version===version)setStatus('error');}).finally(()=>{if(c.version===version)c.pending=false;});
  },[key,library,ready,position,now,route]);
  useEffect(()=>()=>{control.current.version++;},[]);
- return {route,steps:valid?.steps,requests:valid?navigationRequests(data.requests,route):data.requests,status,rerouted:!!valid};
+ return {deviation,route,steps:valid?.steps,requests:valid?navigationRequests(data.requests,route):data.requests,status,rerouted:!!valid};
 }

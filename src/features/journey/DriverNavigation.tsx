@@ -5,6 +5,7 @@ import {supabase} from '../../lib/supabase';
 import {Button} from '../../components/ui';
 import type {JourneyRoom,Position} from './types';
 import {navigationState,readNavigationSteps,metersLabel,type NavigationStep} from './navigation';
+import {reportDeviation} from './deviations';
 import {useRerouting} from './useRerouting';
 export function DriverCamera({position,heading,following}:{position:Position|null;heading:number;following:boolean}){
  const map=useMap(),lat=position?.lat,lng=position?.lng;
@@ -15,6 +16,8 @@ export function DriverNavigation({data,position,now,overview,onOverview,onAction
  const [stored,setStored]=useState<{tripId:string;steps:NavigationStep[]}|null>(null);
  useEffect(()=>{let alive=true;void Promise.resolve(supabase.from('trips').select('navigation_steps').eq('id',data.trip_id).single()).then(({data:trip,error})=>{if(alive)setStored({tripId:data.trip_id,steps:error?[]:readNavigationSteps(trip?.navigation_steps)});}).catch(()=>{if(alive)setStored({tripId:data.trip_id,steps:[]});});return()=>{alive=false;};},[data.trip_id]);
  const guidance=useRerouting(data,position,now,gpsReady);
+ const [reportError,setReportError]=useState(false);
+ useEffect(()=>{if(!guidance.deviation)return;let alive=true;let timer:ReturnType<typeof setTimeout>;const send=()=>{void reportDeviation(data.trip_id).then(()=>{if(alive)setReportError(false);}).catch(()=>{if(alive){setReportError(true);timer=setTimeout(send,5000);}});};send();return()=>{alive=false;clearTimeout(timer);};},[data.trip_id,guidance.deviation]);
  const map=useMap();
  useEffect(()=>{if(overview&&guidance.rerouted&&map){const bounds=new google.maps.LatLngBounds();guidance.route.forEach(p=>bounds.extend(p));map.fitBounds(bounds,60);}},[overview,guidance.rerouted,guidance.route,map]);
  const state=navigationState(guidance.route,position,guidance.requests,guidance.steps??(stored?.tripId===data.trip_id?stored.steps:[]),now);
@@ -23,6 +26,7 @@ export function DriverNavigation({data,position,now,overview,onOverview,onAction
  <DriverCamera position={state?position:null} heading={state?.heading??0} following={!overview}/>
  {(guidance.rerouted||state?.onRoute)&&<Polyline path={overview||!state?.onRoute?guidance.route:state.remaining} strokeColor="#E9AC2F" strokeWeight={7}/>}
  <div className="absolute left-3 right-3 top-3 z-10 rounded-2xl bg-navy-900 p-4 text-white shadow-lg" aria-label="Guía del conductor">
+ {reportError&&<p role="alert" className="mb-2 text-sm text-accent-500">No pudimos avisar del desvío a los pasajeros. Reintentando…</p>}
  {guidance.status==='loading'&&<p role="status" className="mb-2 text-sm text-accent-500">Recalculando por tus paradas pendientes…</p>}
  {guidance.status==='error'&&<p role="alert" className="mb-2 text-sm text-accent-500">No pudimos recalcular. Se conservan tus paraderos; reintentaremos con señal y conexión.</p>}
  {guidance.rerouted&&guidance.status==='idle'&&<p className="mb-2 text-xs text-accent-500">Ruta actualizada · mismos paraderos</p>}

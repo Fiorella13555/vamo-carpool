@@ -2,17 +2,18 @@ import {act,cleanup,fireEvent,render,screen} from '@testing-library/react';
 import {MemoryRouter,Route,Routes} from 'react-router-dom';
 import {afterEach,beforeEach,describe,expect,it,vi} from 'vitest';
 import type {JourneyRoom} from './types';
-const mocks=vi.hoisted(()=>({room:vi.fn(),cancel:vi.fn(),respond:vi.fn(),ready:true,driver:false}));
+const mocks=vi.hoisted(()=>({room:vi.fn(),cancel:vi.fn(),respond:vi.fn(),start:vi.fn(),ready:true,driver:false}));
 vi.mock('../auth/AuthContext',()=>({useAuth:()=>({profile:{id:'passenger'}})}));
 vi.mock('./api',()=>({room:mocks.room,stage:vi.fn(),cancelJourney:mocks.cancel}));
 vi.mock('./useJourneyGps',()=>({useJourneyGps:()=>({ready:mocks.ready,reading:null,error:null,retry:vi.fn()})}));
+vi.mock('./DeviationCheckin',()=>({DeviationCheckin:()=>null}));
 vi.mock('./DriverNavigation',()=>({DriverNavigation:()=> <p>Vista de conducción</p>}));
 vi.mock('./useWalking',()=>({useWalkingRoute:()=>({seconds:60,meters:120})}));
 vi.mock('../../components/LocationSearch',()=>({FitJourney:()=>null}));
 vi.mock('../ratings/TripRatings',()=>({TripRatings:()=> <p>Calificaciones del viaje</p>}));
 vi.mock('../history/JourneyHistoryPanel',()=>({JourneyHistoryPanel:()=>null}));
 vi.mock('../../lib/supabase',()=>({supabase:{}}));
-vi.mock('../trips/api',()=>({finishTrip:vi.fn(),respondToRequest:mocks.respond,startTrip:vi.fn()}));
+vi.mock('../trips/api',()=>({finishTrip:vi.fn(),respondToRequest:mocks.respond,startTrip:mocks.start}));
 vi.mock('@vis.gl/react-google-maps',()=>({APIProvider:({children}:{children:React.ReactNode})=><>{children}</>,Map:({children}:{children:React.ReactNode})=><div>{children}</div>,AdvancedMarker:({children,title}:{children:React.ReactNode;title:string})=><div title={title}>{children}</div>,Polyline:()=>null}));
 import {JourneyRoomPage} from './JourneyRoom';
 const snapshot:JourneyRoom={trip_id:'trip',driver_id:'driver',driver_name:'Valeria',is_driver:false,status:'scheduled',avenida:'Javier Prado',departure_time:'2026-12-01T12:00:00Z',route_duration_seconds:1200,seat_price:6,route:[{lat:-12.1,lng:-77.03},{lat:-12.08,lng:-77.02}],driver_location:null,requests:[{id:'req',passenger_id:'passenger',name:'Ana',status:'pending',stage:'waiting',price:3,pickup_fraction:.2,dropoff_fraction:.7,pickup:{lat:-12.095,lng:-77.0275},dropoff:{lat:-12.085,lng:-77.0225},origin:{lat:-12.095,lng:-77.0275},destination:{lat:-12.085,lng:-77.0225},gps_ready:true,location:null,pickup_stop_seconds:0,dropoff_stop_seconds:0}]};
@@ -32,13 +33,15 @@ describe('un único flujo de viaje',()=>{
   const rejected=structuredClone(snapshot);rejected.requests[0].status='rejected';mocks.room.mockResolvedValue(rejected);
   show();await settle();expect(screen.getByText('El conductor rechazó la solicitud')).toBeTruthy();expect(screen.getByRole('link',{name:'Buscar otro viaje'})).toBeTruthy();
  });
- it('bloquea iniciar si el conductor no comparte GPS',async()=>{
+ it('permite iniciar sin GPS y conserva las verificaciones para las paradas',async()=>{
   mocks.ready=false;const driver=structuredClone(snapshot);driver.is_driver=true;mocks.room.mockResolvedValue(driver);
-  show();await settle();expect((screen.getByRole('button',{name:'Iniciar viaje'}) as HTMLButtonElement).disabled).toBe(true);
+  show();await settle();expect((screen.getByRole('button',{name:'Iniciar viaje'}) as HTMLButtonElement).disabled).toBe(false);
+  await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'Iniciar viaje'}));});expect(mocks.start).toHaveBeenCalledWith('trip');
  });
- it('bloquea iniciar si un pasajero confirmado no tiene GPS reciente',async()=>{
+ it('permite iniciar si un pasajero confirmado no tiene GPS reciente',async()=>{
   const driver=structuredClone(snapshot);driver.is_driver=true;driver.requests[0].status='accepted';driver.requests[0].gps_ready=false;mocks.room.mockResolvedValue(driver);
-  show();await settle();expect((screen.getByRole('button',{name:'Iniciar viaje'}) as HTMLButtonElement).disabled).toBe(true);
+  show();await settle();expect((screen.getByRole('button',{name:'Iniciar viaje'}) as HTMLButtonElement).disabled).toBe(false);
+  await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'Iniciar viaje'}));});expect(mocks.start).toHaveBeenCalledWith('trip');
  });
 });
 
