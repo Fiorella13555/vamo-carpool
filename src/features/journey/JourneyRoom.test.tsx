@@ -105,3 +105,30 @@ it('activa la vista de conducción solo al iniciar como conductor',async()=>{
  data.status='ongoing';mocks.room.mockResolvedValue({...data});await act(async()=>{await vi.advanceTimersByTimeAsync(3000);});expect(screen.getByText('Vista de conducción')).toBeTruthy();
  data.status='finished';mocks.room.mockResolvedValue({...data});await act(async()=>{await vi.advanceTimersByTimeAsync(3000);});expect(screen.queryByText('Vista de conducción')).toBeNull();
 });
+
+it('avisa de una solicitud durante el viaje y enlaza a su tarjeta',async()=>{
+ const driver={...structuredClone(snapshot),is_driver:true,status:'ongoing' as const};
+ mocks.room.mockResolvedValue({...driver,requests:[]});
+ show();await settle();expect(screen.queryByText('Nueva solicitud de viaje')).toBeNull();
+ mocks.room.mockResolvedValue(driver);
+ await act(async()=>{await vi.advanceTimersByTimeAsync(3000);});
+ expect(screen.getByText('Nueva solicitud de viaje')).toBeTruthy();
+ const card=screen.getByRole('region',{name:'Solicitud de Ana'});
+ expect(screen.getByRole('link',{name:'Revisar'}).getAttribute('href')).toBe('#'+card.id);
+ driver.requests[0].status='accepted';
+ await act(async()=>{await vi.advanceTimersByTimeAsync(3000);});
+ expect(screen.queryByText('Nueva solicitud de viaje')).toBeNull();
+});
+
+it('el conductor puede cancelar solo el recojo confirmado antes de que suba el pasajero',async()=>{
+ const driver={...structuredClone(snapshot),is_driver:true,status:'ongoing' as const};
+ driver.requests[0].status='accepted';
+ mocks.room.mockResolvedValue(driver);
+ vi.spyOn(window,'confirm').mockReturnValue(true);
+ show();await settle();
+ await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'Cancelar recojo'}));});
+ expect(mocks.cancel).toHaveBeenCalledExactlyOnceWith('trip','req');
+ driver.requests[0].stage='onboard';
+ await act(async()=>{await vi.advanceTimersByTimeAsync(3000);});
+ expect(screen.queryByRole('button',{name:'Cancelar recojo'})).toBeNull();
+});

@@ -4,7 +4,8 @@ import {afterEach,it,expect,vi} from 'vitest';
 import type {JourneyOption} from './types';
 const mock=vi.hoisted(()=>({options:vi.fn(),request:vi.fn()}));
 vi.mock('./api',()=>mock);
-vi.mock('./useWalking',()=>({useWalkingRoute:()=>({seconds:30,meters:240})}));
+const walking=vi.hoisted(()=>({seconds:30}));
+vi.mock('./useWalking',()=>({useWalkingRoute:()=>({seconds:walking.seconds,meters:240})}));
 vi.mock('../../components/LocationSearch',()=>({FitJourney:()=>null,LocationSearch:({label,onSelect}:{label:string;onSelect:(p:{lat:number;lng:number})=>void})=><button onClick={()=>onSelect({lat:-12.1,lng:-77.01})}>{label}</button>}));
 vi.mock('@vis.gl/react-google-maps',()=>({APIProvider:({children}:{children:React.ReactNode})=><>{children}</>,Map:({children}:{children:React.ReactNode})=><div>{children}</div>,AdvancedMarker:()=>null,Polyline:()=>null}));
 import {JourneySearch} from './JourneySearch';
@@ -39,6 +40,17 @@ it('permite visualizar un viaje iniciado sin GPS pero espera para solicitar',asy
  expect(screen.getByRole('dialog',{name:'Visualizar viaje'})).toBeTruthy();
  expect(screen.getByRole('button',{name:'Elegir y solicitar asiento'}).hasAttribute('disabled')).toBe(true);
  expect(mock.request).not.toHaveBeenCalled();
+});
+it('permite solicitar aunque la caminata estimada supere el tiempo al recojo',async()=>{
+ const option={trip_id:'soon',driver_id:'d',driver_name:'Conductor',avenida:'Ruta',departure_time:new Date().toISOString(),status:'ongoing',seats_available:2,price:4,pickup_fraction:.2,dropoff_fraction:.7,route_duration_seconds:1200,pickup:{lat:-12.1,lng:-77.01},dropoff:{lat:-12.09,lng:-77},route:[],pickup_distance_m:0,dropoff_distance_m:0,driver_progress:.18} as JourneyOption;
+ walking.seconds=300;
+ try{
+  mock.options.mockResolvedValue([option]);prepareSearch();
+  expect(await screen.findByText(/Puede que no llegues a tiempo caminando/)).toBeTruthy();
+  fireEvent.click(screen.getByRole('button',{name:'Visualizar viaje'}));
+  await act(async()=>{fireEvent.click(screen.getByRole('button',{name:'Elegir y solicitar asiento'}));});
+  expect(mock.request).toHaveBeenCalledOnce();
+ }finally{walking.seconds=30;}
 });
 it('muestra el aviso de ruta sin viajes antes de las preferencias',async()=>{
  mock.options.mockResolvedValue([]);prepareSearch();
